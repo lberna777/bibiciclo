@@ -79,8 +79,8 @@ git branch -M main
     "dev": "vite",
     "build": "tsc -b && vite build",
     "preview": "vite preview",
-    "test": "vitest run",
-    "test:watch": "vitest",
+    "test": "TZ=Europe/Rome vitest run",
+    "test:watch": "TZ=Europe/Rome vitest",
     "icons": "node scripts/make-icons.mjs"
   },
   "dependencies": {
@@ -636,6 +636,8 @@ export interface Stato {
 - [ ] **Step 2: Scrivere i test in `src/core/dates.test.ts`**
 
 Il caso dell'ora legale è il motivo per cui questo modulo esiste: in Italia il 25 ottobre 2026 le lancette tornano indietro di un'ora, e un'implementazione basata su `Date` locale sbaglierebbe di un giorno.
+
+Attenzione a una trappola: quel test discrimina un'implementazione sbagliata **solo se il processo gira in un fuso che osserva l'ora legale**. Su CI (`ubuntu-latest`, UTC) aritmetica locale e UTC coincidono, e il test diventerebbe decorativo. Per questo gli script `test` e `test:watch` fissano `TZ=Europe/Rome`. Il test di primavera e quello su `diffDays` non discriminano in nessun caso — il primo perché il cambio di primavera toglie un'ora sola, il secondo perché `Math.round` assorbe qualunque scarto sotto le 12 ore — quindi sono normali test di regressione e i loro nomi non devono promettere altro.
 
 ```ts
 import { describe, it, expect } from 'vitest';
