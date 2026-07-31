@@ -84,6 +84,17 @@ export function rimuoviGiorno(stato: Stato, data: ISODate): Stato {
   return { ...stato, dayLogs, periods };
 }
 
+/**
+ * Deriva i periodi da un insieme di dayLogs, riusando gli id dei periodi
+ * esistenti quando il loro `inizio` combacia con un gruppo derivato.
+ *
+ * Esposta per `src/storage/db.ts`: al caricamento i `periods` salvati non
+ * sono attendibili di per sé (potrebbero contraddire i `dayLogs`, es. un
+ * `fine` che non è mai stato effettivamente registrato) — solo i loro id
+ * vengono riusati, i confini vengono sempre ricalcolati dal diario.
+ */
+export const derivaPeriodi = normalizza;
+
 /** Il ciclo è "in corso" se l'ultimo giorno registrato dista non più di TOLLERANZA da oggi. */
 export function cicloInCorso(stato: Stato, oggi: ISODate): Periodo | null {
   const p = ordina(stato.periods).at(-1);

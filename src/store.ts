@@ -9,6 +9,7 @@ export type Tab = 'oggi' | 'calendario' | 'impostazioni';
 interface Store {
   stato: Stato;
   pronto: boolean;
+  errore: string | null;
   tab: Tab;
   carica: () => Promise<void>;
   setTab: (t: Tab) => void;
@@ -22,16 +23,35 @@ interface Store {
 export const useStore = create<Store>((set, get) => {
   async function applica(nuovo: Stato) {
     set({ stato: nuovo });
-    await salvaStato(nuovo);
+    try {
+      await salvaStato(nuovo);
+      set({ errore: null });
+    } catch {
+      // Lo stato resta in memoria: la modifica dell'utente non deve sparire
+      // sotto i suoi occhi anche se il salvataggio su disco è fallito.
+      set({
+        errore:
+          "Non sono riuscita a salvare sul telefono. Se chiudi l'app potresti perdere le ultime modifiche.",
+      });
+    }
   }
 
   return {
     stato: statoIniziale(oggi()),
     pronto: false,
+    errore: null,
     tab: 'oggi',
 
     carica: async () => {
-      set({ stato: await caricaStato(), pronto: true });
+      try {
+        const stato = await caricaStato();
+        set({ stato, pronto: true, errore: null });
+      } catch {
+        // Non passare a pronto: true né ripiegare su uno stato vuoto — uno
+        // stato vuoto lascerebbe che la prima scrittura sovrascriva dati che
+        // sono solo momentaneamente illeggibili, non persi.
+        set({ errore: 'Non riesco a leggere i dati salvati su questo telefono.' });
+      }
     },
 
     setTab: (tab) => set({ tab }),
