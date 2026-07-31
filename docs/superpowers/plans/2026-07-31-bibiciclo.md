@@ -473,7 +473,7 @@ Il rischio principale del progetto (§11 della specifica). Va sciolto prima di c
 
 **Interfaces:**
 - Consumes: PWA installata dalla Task 2
-- Produces: `condividiFile(file: File, titolo: string): Promise<'condiviso' | 'scaricato'>`
+- Produces: `condividiFile(file: File, titolo: string): Promise<'condiviso' | 'scaricato' | 'annullato'>`
 
 - [ ] **Step 1: Scrivere `src/lib/share.ts`**
 
@@ -484,16 +484,25 @@ Il rischio principale del progetto (§11 della specifica). Va sciolto prima di c
  * Consegna un file all'utente. Su iOS apre il pannello di condivisione nativo,
  * da cui il file può essere aperto direttamente nell'app di destinazione.
  * Se la condivisione di file non è disponibile, ripiega sul download.
- * Restituisce quale delle due strade è stata usata.
+ *
+ * Esiti:
+ * - 'condiviso'  il pannello ha consegnato il file
+ * - 'scaricato'  si è usato il ripiego del download
+ * - 'annullato'  il pannello si è chiuso senza consegnare nulla. Copre sia
+ *                l'annullamento deliberato sia l'assenza di destinazioni:
+ *                non sappiamo distinguerli, e non dobbiamo dichiarare un
+ *                successo che non c'è stato.
  */
-export async function condividiFile(file: File, titolo: string): Promise<'condiviso' | 'scaricato'> {
+export async function condividiFile(
+  file: File,
+  titolo: string,
+): Promise<'condiviso' | 'scaricato' | 'annullato'> {
   if (navigator.canShare?.({ files: [file] })) {
     try {
       await navigator.share({ files: [file], title: titolo });
       return 'condiviso';
     } catch (err) {
-      // L'utente ha annullato il pannello: non è un errore da segnalare.
-      if (err instanceof DOMException && err.name === 'AbortError') return 'condiviso';
+      if (err instanceof DOMException && err.name === 'AbortError') return 'annullato';
       // Qualsiasi altro errore: si prosegue col ripiego.
     }
   }
@@ -2639,6 +2648,22 @@ import { condividiFile } from '../lib/share';
 import { useStore } from '../store';
 import Avvertenza from '../components/Avvertenza';
 
+/**
+ * Un messaggio per ciascun esito di `condividiFile`. Su 'annullato' non si
+ * dichiara un successo: il pannello si è chiuso senza consegnare il file.
+ */
+const MESSAGGI_CALENDARIO = {
+  condiviso: 'Scegli "Calendario" per aggiungere le date.',
+  scaricato: 'File scaricato: aprilo dall\'app File per aggiungerlo al Calendario.',
+  annullato: 'Non è stato aggiunto niente. Riprova quando vuoi.',
+} as const;
+
+const MESSAGGI_BACKUP = {
+  condiviso: 'Copia salvata. Conservala in un posto sicuro.',
+  scaricato: 'Copia scaricata. Conservala in un posto sicuro.',
+  annullato: 'La copia non è stata salvata. Riprova quando vuoi.',
+} as const;
+
 export default function Impostazioni() {
   const stato = useStore((s) => s.stato);
   const aggiornaDurataMedia = useStore((s) => s.aggiornaDurataMedia);
@@ -2654,17 +2679,12 @@ export default function Impostazioni() {
     }
     const file = new File([generaIcs(eventi)], 'bibiciclo.ics', { type: 'text/calendar' });
     const esito = await condividiFile(file, 'Date di BibiCiclo');
-    setMessaggio(
-      esito === 'condiviso'
-        ? 'Scegli "Calendario" per aggiungere le date.'
-        : 'File scaricato: aprilo dall\'app File per aggiungerlo al Calendario.',
-    );
+    setMessaggio(MESSAGGI_CALENDARIO[esito]);
   }
 
   async function salvaCopia() {
     const file = new File([esportaJson(stato)], nomeFileBackup(oggi()), { type: 'application/json' });
-    await condividiFile(file, 'Backup di BibiCiclo');
-    setMessaggio('Copia salvata. Conservala in un posto sicuro.');
+    setMessaggio(MESSAGGI_BACKUP[await condividiFile(file, 'Backup di BibiCiclo')]);
   }
 
   async function ripristina(e: React.ChangeEvent<HTMLInputElement>) {
