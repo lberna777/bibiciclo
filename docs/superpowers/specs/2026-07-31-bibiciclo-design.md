@@ -100,7 +100,7 @@ La tolleranza di 2 giorni serve a un caso reale: dimenticare di segnare un giorn
 
 ## 5. Algoritmo di previsione
 
-**Durata del ciclo.** Si calcola la distanza in giorni fra gli `inizio` consecutivi. Si prende la **mediana degli ultimi 6 cicli** — non la media aritmetica, perché un singolo ciclo anomalo da 45 giorni non deve spostare le previsioni per mesi. Con meno di 2 cicli registrati si usa `cicloMedioDichiarato`. Il risultato è vincolato all'intervallo **21–45 giorni**: fuori da lì si tratta quasi sempre di un errore di inserimento.
+**Durata del ciclo.** Si calcola la distanza in giorni fra gli `inizio` consecutivi. Si prende la **mediana degli ultimi 6 cicli** — non la media aritmetica, perché un singolo ciclo anomalo da 45 giorni non deve spostare le previsioni per mesi. Con meno di 2 cicli registrati si usa `cicloMedioDichiarato`. Il risultato è vincolato all'intervallo **21–45 giorni**: fuori da lì si tratta *spesso* di un errore di inserimento — ma non sempre. Cicli genuinamente lunghi (50 giorni e oltre) esistono e sono regolari, quindi l'avviso di irregolarità non scatterebbe: l'app annuncerebbe con sicurezza una data calcolata su una durata che si è riscritta da sola. Per questo il vincolo non è silenzioso: quando interviene, la previsione lo dichiara e la schermata Oggi lo dice, invitando a correggere la durata a mano dalle impostazioni.
 
 **Prossimo ciclo.** `ultimo inizio + durata mediana`.
 

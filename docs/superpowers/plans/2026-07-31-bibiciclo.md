@@ -989,6 +989,8 @@ export interface Previsione {
   irregolare: boolean;
   /** false quando la previsione poggia sul valore dichiarato anziché sullo storico. */
   basataSuStorico: boolean;
+  /** true quando la durata usata è stata riportata dentro l'intervallo 21-45. */
+  durataVincolata: boolean;
 }
 
 function ordinati(periods: Periodo[]): Periodo[] {
@@ -1035,11 +1037,18 @@ export function durataMestruazioni(periods: Periodo[]): number {
   return mediana(periods.map((p) => diffDays(p.inizio, p.fine) + 1));
 }
 
+/** La durata prima del vincolo, per sapere se il vincolo è intervenuto. */
+const rawDurata = (periods: Periodo[], dichiarato: number): number => {
+  const l = ultime(periods);
+  return l.length === 0 ? dichiarato : mediana(l);
+};
+
 export function previsione(periods: Periodo[], dichiarato: number, oggi: ISODate): Previsione | null {
   if (periods.length === 0) return null;
 
   const p = ordinati(periods);
   const ultimo = p[p.length - 1];
+  const raw = rawDurata(periods, dichiarato);
   const durata = durataMediana(periods, dichiarato);
   const prossimoInizio = addDays(ultimo.inizio, durata);
 
@@ -1056,6 +1065,7 @@ export function previsione(periods: Periodo[], dichiarato: number, oggi: ISODate
     fertileFine: addDays(ovulazione, FERTILE_DOPO),
     irregolare: isIrregolare(periods),
     basataSuStorico: ultime(periods).length > 0,
+    durataVincolata: raw !== durata,
   };
 }
 ```
@@ -2090,6 +2100,14 @@ export default function Oggi() {
         <div className="mt-4 rounded-2xl border border-bordo bg-white p-3 text-[11px] leading-snug text-inchiostro/70">
           I tuoi ultimi cicli sono stati piuttosto irregolari, quindi questa previsione — e
           soprattutto il periodo fertile — è poco affidabile.
+        </div>
+      )}
+
+      {p?.durataVincolata && (
+        <div className="mt-3 rounded-2xl border border-bordo bg-white p-3 text-[11px] leading-snug text-inchiostro/70">
+          I tuoi cicli risultano più {p.durataMediana === 45 ? 'lunghi' : 'corti'} di quelli che
+          l'app sa prevedere bene, quindi sta usando {p.durataMediana} giorni. Se ti sembra
+          sbagliato, correggi la durata dalle impostazioni.
         </div>
       )}
 
