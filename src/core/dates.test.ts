@@ -1,5 +1,5 @@
-import { describe, it, expect } from 'vitest';
-import { addDays, diffDays, confronta, formattaLunga, formattaCorta, giornoSettimana, giorniDelMese } from './dates';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { addDays, diffDays, confronta, formattaLunga, formattaCorta, giornoSettimana, giorniDelMese, oggi, nomeMese } from './dates';
 
 describe('addDays', () => {
   it('somma giorni dentro lo stesso mese', () => {
@@ -14,10 +14,15 @@ describe('addDays', () => {
   it('sottrae giorni', () => {
     expect(addDays('2026-01-02', -3)).toBe('2025-12-30');
   });
-  it('attraversa la fine dell ora legale senza perdere un giorno', () => {
+  // This is the PRIMARY test that discriminates correct UTC-based arithmetic from
+  // incorrect naive local-time arithmetic. A naive implementation that uses local
+  // time getters/setters would return '2026-10-25' because the autumn DST fold
+  // (when local clocks go back from 02:00 to 01:00) confuses date arithmetic.
+  // In UTC, there is no fold—a day is always exactly 24 hours.
+  it('somma giorni a cavallo del cambio di ora legale d autunno', () => {
     expect(addDays('2026-10-24', 2)).toBe('2026-10-26');
   });
-  it('attraversa l inizio dell ora legale senza perdere un giorno', () => {
+  it('somma giorni a cavallo del cambio di ora legale di primavera', () => {
     expect(addDays('2026-03-28', 2)).toBe('2026-03-30');
   });
   it('gestisce il 29 febbraio di un anno bisestile', () => {
@@ -35,7 +40,7 @@ describe('diffDays', () => {
   it('restituisce zero per la stessa data', () => {
     expect(diffDays('2026-07-03', '2026-07-03')).toBe(0);
   });
-  it('non sbaglia attraversando l ora legale', () => {
+  it('conta i giorni a cavallo del cambio di ora legale', () => {
     expect(diffDays('2026-10-24', '2026-10-26')).toBe(2);
   });
 });
@@ -72,5 +77,30 @@ describe('giorniDelMese', () => {
   });
   it('gestisce febbraio bisestile', () => {
     expect(giorniDelMese(2028, 2)).toHaveLength(29);
+  });
+});
+
+describe('oggi', () => {
+  beforeEach(() => {
+    vi.useFakeTimers();
+  });
+
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
+  it('restituisce il giorno di calendario locale', () => {
+    // 2026-07-30T23:30:00Z is 2026-07-31T01:30:00+02:00 in Rome (CEST)
+    // This tests that oggi() uses local getters, not UTC getters
+    vi.setSystemTime(new Date('2026-07-30T23:30:00Z'));
+    expect(oggi()).toBe('2026-07-31');
+  });
+});
+
+describe('nomeMese', () => {
+  it('restituisce il nome del mese in italiano', () => {
+    expect(nomeMese(1)).toBe('gennaio');
+    expect(nomeMese(7)).toBe('luglio');
+    expect(nomeMese(12)).toBe('dicembre');
   });
 });
