@@ -87,16 +87,17 @@ interface Stato {
 
 Non esiste uno stato "aperto" esplicito: `fine` contiene sempre l'ultimo giorno registrato, e un ciclo è considerato *in corso* quando la sua `fine` dista non più di 2 giorni da oggi. Eliminare lo stato nullo elimina anche la possibilità che resti incoerente.
 
-Quando l'utente registra un giorno di flusso:
+**`periods` non viene costruito: viene derivato.** È una funzione pura di `dayLogs`, ricalcolata a ogni modifica del diario:
 
-- se la data cade dentro un ciclo esistente, si aggiorna solo il diario;
-- se dista **1 o 2 giorni** dalla `fine` di un ciclo esistente, quel ciclo viene esteso in avanti;
-- se dista **1 o 2 giorni** dall'`inizio` di un ciclo esistente, quel ciclo viene esteso all'indietro (caso "me ne ero accorta ma ho segnato solo dal secondo giorno");
-- altrimenti si apre un nuovo ciclo con `inizio` e `fine` alla data inserita.
+1. si ordinano tutte le date registrate;
+2. si raggruppano quelle consecutive il cui scarto è **≤ 2 giorni**;
+3. ogni gruppo diventa un ciclo, con `inizio` al primo giorno del gruppo e `fine` all'ultimo.
+
+Ne discendono per costruzione tre garanzie che, mantenute a mano, si romperebbero: `inizio` e `fine` sono sempre giorni *realmente registrati*; due cicli vicini non possono restare separati per errore; e a parità di diario lo stato è sempre lo stesso, indipendentemente dall'ordine in cui i giorni sono stati inseriti o tolti.
 
 La tolleranza di 2 giorni serve a un caso reale: dimenticare di segnare un giorno non deve spezzare un ciclo in due, perché due `inizio` fasulli falserebbero tutte le medie successive.
 
-**Rimozione.** Toccando un giorno già registrato, il foglio offre anche "Rimuovi questo giorno": il giorno esce dal diario e il ciclo si accorcia; se era l'unico giorno del ciclo, il ciclo viene eliminato. Se era un giorno centrale, il ciclo viene spezzato in due — caso raro, ma va gestito senza lasciare dati incoerenti.
+**Rimozione.** Toccando un giorno già registrato, il foglio offre anche "Rimuovi questo giorno": il giorno esce dal diario e i cicli si ricalcolano. Se era l'unico giorno del ciclo, il ciclo sparisce. Se era un giorno centrale, il ciclo si spezza **solo se** il buco lasciato supera la tolleranza — altrimenti resta uno, esattamente come se quel giorno non fosse mai stato registrato. È la stessa regola applicata in entrambe le direzioni, e per questo è difficile da sbagliare.
 
 ## 5. Algoritmo di previsione
 

@@ -1242,7 +1242,7 @@ Expected: FAIL — `Failed to resolve import "./periods"`
 
 ```ts
 import type { Flusso, ISODate, Periodo, Stato } from '../types';
-import { addDays, confronta, diffDays } from './dates';
+import { confronta, diffDays } from './dates';
 
 /** Giorni di scarto entro cui una registrazione appartiene ancora allo stesso ciclo. */
 const TOLLERANZA = 2;
@@ -1255,57 +1255,62 @@ function nuovoId(): string {
 
 const ordina = (p: Periodo[]) => [...p].sort((a, b) => confronta(a.inizio, b.inizio));
 
-const contiene = (p: Periodo, d: ISODate) => d >= p.inizio && d <= p.fine;
-
 /**
- * Registra un giorno di flusso.
+ * Deriva i cicli dal diario.
  *
- * Il giorno viene assorbito dal ciclo che gli sta vicino entro TOLLERANZA giorni:
- * dimenticare di segnare un giorno non deve spezzare un ciclo in due, perché due
- * `inizio` fasulli falserebbero tutte le medie successive.
+ * I giorni registrati vengono ordinati e raggruppati: due giorni consecutivi
+ * appartengono allo stesso ciclo se distano al massimo TOLLERANZA. Ogni gruppo
+ * diventa un ciclo che va dal suo primo al suo ultimo giorno.
+ *
+ * Derivare invece di costruire rende strutturali tre garanzie che, mantenute a
+ * mano, si romperebbero:
+ * - `inizio` e `fine` sono sempre giorni realmente registrati;
+ * - due cicli vicini non possono restare separati per errore;
+ * - a parità di diario lo stato è sempre lo stesso, comunque ci si sia arrivati.
+ *
+ * Gli id dei cicli esistenti vengono riusati quando l'inizio coincide.
  */
-export function registraGiorno(stato: Stato, data: ISODate, flusso: Flusso, nota?: string): Stato {
-  const dayLogs = { ...stato.dayLogs, [data]: nota ? { flusso, nota } : { flusso } };
-  const periods = ordina(stato.periods);
+function normalizza(dayLogs: Record<ISODate, unknown>, periodsEsistenti: Periodo[]): Periodo[] {
+  const date = Object.keys(dayLogs).sort();
+  if (date.length === 0) return [];
 
-  const dentro = periods.find((p) => contiene(p, data));
-  if (dentro) return { ...stato, dayLogs };
+  const gruppi: ISODate[][] = [];
+  let gruppo: ISODate[] = [date[0]];
 
-  const daEstendereAvanti = periods.find((p) => {
-    const scarto = diffDays(p.fine, data);
-    return scarto > 0 && scarto <= TOLLERANZA;
-  });
-  if (daEstendereAvanti) {
-    return {
-      ...stato,
-      dayLogs,
-      periods: periods.map((p) => (p.id === daEstendereAvanti.id ? { ...p, fine: data } : p)),
-    };
+  for (let i = 1; i < date.length; i++) {
+    if (diffDays(date[i - 1], date[i]) <= TOLLERANZA) {
+      gruppo.push(date[i]);
+    } else {
+      gruppi.push(gruppo);
+      gruppo = [date[i]];
+    }
   }
+  gruppi.push(gruppo);
 
-  const daEstendereIndietro = periods.find((p) => {
-    const scarto = diffDays(data, p.inizio);
-    return scarto > 0 && scarto <= TOLLERANZA;
-  });
-  if (daEstendereIndietro) {
-    return {
-      ...stato,
-      dayLogs,
-      periods: periods.map((p) => (p.id === daEstendereIndietro.id ? { ...p, inizio: data } : p)),
-    };
-  }
-
-  return {
-    ...stato,
-    dayLogs,
-    periods: ordina([...periods, { id: nuovoId(), inizio: data, fine: data }]),
-  };
+  return ordina(
+    gruppi.map((g) => {
+      const inizio = g[0];
+      const fine = g[g.length - 1];
+      return { id: periodsEsistenti.find((p) => p.inizio === inizio)?.id ?? nuovoId(), inizio, fine };
+    }),
+  );
 }
 
 /**
- * Rimuove un giorno dal diario e riallinea i cicli.
- * Se il giorno era centrale, il ciclo viene spezzato in due: è un caso raro,
- * ma va gestito senza lasciare periodi che contengono giorni non registrati.
+ * Registra un giorno di flusso, poi rideriva i cicli.
+ *
+ * La tolleranza di TOLLERANZA giorni serve a un caso reale: dimenticare di
+ * segnare un giorno non deve spezzare un ciclo in due, perché due `inizio`
+ * fasulli falserebbero tutte le medie successive.
+ */
+export function registraGiorno(stato: Stato, data: ISODate, flusso: Flusso, nota?: string): Stato {
+  const dayLogs = { ...stato.dayLogs, [data]: nota ? { flusso, nota } : { flusso } };
+  return { ...stato, dayLogs, periods: normalizza(dayLogs, stato.periods) };
+}
+
+/**
+ * Toglie un giorno dal diario, poi rideriva i cicli. Il ciclo si spezza solo se
+ * il buco lasciato supera la tolleranza.
  */
 export function rimuoviGiorno(stato: Stato, data: ISODate): Stato {
   if (!stato.dayLogs[data]) return stato;
@@ -1313,22 +1318,7 @@ export function rimuoviGiorno(stato: Stato, data: ISODate): Stato {
   const dayLogs = { ...stato.dayLogs };
   delete dayLogs[data];
 
-  const contenitore = stato.periods.find((p) => contiene(p, data));
-  if (!contenitore) return { ...stato, dayLogs };
-
-  const risultanti: Periodo[] = [];
-  if (data > contenitore.inizio) {
-    risultanti.push({ ...contenitore, fine: addDays(data, -1) });
-  }
-  if (data < contenitore.fine) {
-    risultanti.push({ id: nuovoId(), inizio: addDays(data, 1), fine: contenitore.fine });
-  }
-
-  return {
-    ...stato,
-    dayLogs,
-    periods: ordina([...stato.periods.filter((p) => p.id !== contenitore.id), ...risultanti]),
-  };
+  return { ...stato, dayLogs, periods: normalizza(dayLogs, stato.periods) };
 }
 
 /** Il ciclo è "in corso" se l'ultimo giorno registrato dista non più di TOLLERANZA da oggi. */
