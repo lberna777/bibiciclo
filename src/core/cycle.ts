@@ -21,6 +21,8 @@ export interface Previsione {
   irregolare: boolean;
   /** false quando la previsione poggia sul valore dichiarato anziché sullo storico. */
   basataSuStorico: boolean;
+  /** true quando la durata usata è stata riportata dentro l'intervallo 21-45. */
+  durataVincolata: boolean;
 }
 
 function ordinati(periods: Periodo[]): Periodo[] {
@@ -67,11 +69,17 @@ export function durataMestruazioni(periods: Periodo[]): number {
   return mediana(periods.map((p) => diffDays(p.inizio, p.fine) + 1));
 }
 
+const rawDurata = (periods: Periodo[], dichiarato: number): number => {
+  const l = ultime(periods);
+  return l.length === 0 ? dichiarato : mediana(l);
+};
+
 export function previsione(periods: Periodo[], dichiarato: number, oggi: ISODate): Previsione | null {
   if (periods.length === 0) return null;
 
   const p = ordinati(periods);
   const ultimo = p[p.length - 1];
+  const raw = rawDurata(periods, dichiarato);
   const durata = durataMediana(periods, dichiarato);
   const prossimoInizio = addDays(ultimo.inizio, durata);
 
@@ -88,5 +96,6 @@ export function previsione(periods: Periodo[], dichiarato: number, oggi: ISODate
     fertileFine: addDays(ovulazione, FERTILE_DOPO),
     irregolare: isIrregolare(periods),
     basataSuStorico: ultime(periods).length > 0,
+    durataVincolata: raw !== durata,
   };
 }

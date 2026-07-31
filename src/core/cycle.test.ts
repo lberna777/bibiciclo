@@ -61,6 +61,13 @@ describe('durataMediana', () => {
   it('vincola anche il valore dichiarato', () => {
     expect(durataMediana([], 200)).toBe(45);
   });
+  it('calcola la mediana con valori distinti al centro (caso pari)', () => {
+    // 10 cicli: i primi 4 da 40, gli ultimi 6 con valori distinti [27, 28, 29, 30, 31, 32]
+    // Dopo ordinamento: [27, 28, 29, 30, 31, 32]
+    // Mediana = (v[2] + v[3]) / 2 = (29 + 30) / 2 = 29.5 → Math.round = 30
+    const p = cicli('2026-01-01', [40, 40, 40, 40, 27, 28, 29, 30, 31, 32]);
+    expect(durataMediana(p, 28)).toBe(30);
+  });
 });
 
 describe('isIrregolare', () => {
@@ -120,7 +127,36 @@ describe('previsione', () => {
   it('calcola comunque la finestra fertile quando i cicli sono irregolari', () => {
     const p = previsione(cicli('2026-01-01', [24, 28, 38, 30]), 28, '2026-05-01')!;
     expect(p.irregolare).toBe(true);
-    expect(p.fertileInizio).toBeTruthy();
-    expect(p.fertileFine).toBeTruthy();
+    // Mediana di [24, 28, 30, 38] = (28 + 30) / 2 = 29
+    // Prossimo inizio: 2026-05-01 + 29 = 2026-05-30
+    // Ovulazione: 2026-05-30 - 14 = 2026-05-16
+    // Fertile inizio: 2026-05-16 - 5 = 2026-05-11
+    // Fertile fine: 2026-05-16 + 1 = 2026-05-17
+    expect(p.fertileInizio).toBe('2026-05-11');
+    expect(p.fertileFine).toBe('2026-05-17');
+  });
+
+  it('rileva quando la durata è vincolata: mediana grezza 90', () => {
+    const p = previsione(cicli('2026-01-01', [90, 90, 90]), 28, '2026-01-01')!;
+    expect(p.durataMediana).toBe(45);
+    expect(p.durataVincolata).toBe(true);
+  });
+
+  it('rileva quando la durata è vincolata: mediana grezza 10', () => {
+    const p = previsione(cicli('2026-01-01', [10, 10, 10]), 28, '2026-01-01')!;
+    expect(p.durataMediana).toBe(21);
+    expect(p.durataVincolata).toBe(true);
+  });
+
+  it('rileva quando la durata è vincolata: dichiarato 200 senza storico', () => {
+    const p = previsione(cicli('2026-01-01', []), 200, '2026-01-01')!;
+    expect(p.durataMediana).toBe(45);
+    expect(p.durataVincolata).toBe(true);
+  });
+
+  it('indica nessun vincolo con una durata normale', () => {
+    const p = previsione(cicli('2026-01-01', [28, 28, 28]), 28, '2026-01-01')!;
+    expect(p.durataMediana).toBe(28);
+    expect(p.durataVincolata).toBe(false);
   });
 });
