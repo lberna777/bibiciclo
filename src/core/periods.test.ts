@@ -95,18 +95,70 @@ describe('rimuoviGiorno', () => {
     expect(s.periods[0]).toMatchObject({ inizio: '2026-07-04', fine: '2026-07-04' });
   });
 
-  it('spezza il ciclo in due se si rimuove un giorno centrale', () => {
+  it('togliere un giorno centrale non spezza il ciclo se il buco resta nella tolleranza', () => {
     let s = statoVuoto();
     for (const d of ['2026-07-03', '2026-07-04', '2026-07-05']) s = registraGiorno(s, d, 'medio');
     s = rimuoviGiorno(s, '2026-07-04');
+    expect(s.periods).toHaveLength(1);
+    expect(s.periods[0]).toMatchObject({ inizio: '2026-07-03', fine: '2026-07-05' });
+  });
+
+  it('rimuovere giorni spezza il ciclo se il buco supera la tolleranza', () => {
+    let s = statoVuoto();
+    for (const d of ['2026-07-01', '2026-07-02', '2026-07-03', '2026-07-04', '2026-07-05']) {
+      s = registraGiorno(s, d, 'medio');
+    }
+    s = rimuoviGiorno(s, '2026-07-02');
+    s = rimuoviGiorno(s, '2026-07-03');
     expect(s.periods).toHaveLength(2);
-    expect(s.periods[0]).toMatchObject({ inizio: '2026-07-03', fine: '2026-07-03' });
-    expect(s.periods[1]).toMatchObject({ inizio: '2026-07-05', fine: '2026-07-05' });
+    expect(s.periods[0]).toMatchObject({ inizio: '2026-07-01', fine: '2026-07-01' });
+    expect(s.periods[1]).toMatchObject({ inizio: '2026-07-04', fine: '2026-07-05' });
   });
 
   it('non fa nulla se il giorno non era registrato', () => {
     const s = registraGiorno(statoVuoto(), '2026-07-03', 'medio');
     expect(rimuoviGiorno(s, '2026-09-09').periods).toHaveLength(1);
+  });
+
+  it('riempire il buco tra due periodi li fonde in uno', () => {
+    let s = registraGiorno(statoVuoto(), '2026-07-01', 'medio');
+    s = registraGiorno(s, '2026-07-05', 'medio');
+    s = registraGiorno(s, '2026-07-03', 'medio');
+    expect(s.periods).toHaveLength(1);
+    expect(s.periods[0]).toMatchObject({ inizio: '2026-07-01', fine: '2026-07-05' });
+  });
+
+  it('rimuovere un giorno limite di un periodo a gap tollerato mantiene il logbook consistente', () => {
+    let s = registraGiorno(statoVuoto(), '2026-07-01', 'medio');
+    s = registraGiorno(s, '2026-07-03', 'medio');
+    s = rimuoviGiorno(s, '2026-07-03');
+    expect(s.periods).toHaveLength(1);
+    expect(s.periods[0]).toMatchObject({ inizio: '2026-07-01', fine: '2026-07-01' });
+    expect(s.dayLogs['2026-07-01']).toBeDefined();
+  });
+
+  it('invariante: ogni period ha inizio e fine nei dayLogs', () => {
+    let s = statoVuoto();
+    for (const d of ['2026-07-01', '2026-07-03', '2026-07-05']) {
+      s = registraGiorno(s, d, 'medio');
+    }
+    for (const period of s.periods) {
+      expect(s.dayLogs[period.inizio]).toBeDefined();
+      expect(s.dayLogs[period.fine]).toBeDefined();
+    }
+  });
+
+  it('estendere indietro con tolleranza 2', () => {
+    let s = registraGiorno(statoVuoto(), '2026-07-04', 'medio');
+    s = registraGiorno(s, '2026-07-02', 'medio');
+    expect(s.periods).toHaveLength(1);
+    expect(s.periods[0]).toMatchObject({ inizio: '2026-07-02', fine: '2026-07-04' });
+  });
+
+  it('non estendere indietro oltre tolleranza 2', () => {
+    let s = registraGiorno(statoVuoto(), '2026-07-04', 'medio');
+    s = registraGiorno(s, '2026-07-01', 'medio');
+    expect(s.periods).toHaveLength(2);
   });
 });
 

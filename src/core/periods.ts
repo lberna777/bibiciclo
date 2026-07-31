@@ -1,5 +1,5 @@
 import type { Flusso, ISODate, Periodo, Stato } from '../types';
-import { addDays, confronta, diffDays } from './dates';
+import { confronta, diffDays } from './dates';
 
 /** Giorni di scarto entro cui una registrazione appartiene ancora allo stesso ciclo. */
 const TOLLERANZA = 2;
@@ -12,7 +12,49 @@ function nuovoId(): string {
 
 const ordina = (p: Periodo[]) => [...p].sort((a, b) => confronta(a.inizio, b.inizio));
 
-const contiene = (p: Periodo, d: ISODate) => d >= p.inizio && d <= p.fine;
+/**
+ * Normalizza i periodi derivandoli da dayLogs.
+ *
+ * Raggruppa i giorni registrati in cicli, dove due giorni appartengono allo stesso ciclo
+ * se il gap tra loro è ≤ TOLLERANZA. Preserva gli ID dei periodi esistenti quando possibile
+ * (matchando l'inizio), altrimenti minta nuovi ID.
+ *
+ * Questa derivazione garantisce che:
+ * - Ogni `inizio` e `fine` di un periodo è un giorno effettivamente registrato
+ * - Due registrazioni non creano mai una "fusione cieca" di periodi distinti
+ * - Lo stato è una pura funzione del diario: stessa dayLogs → stessi periods
+ */
+function normalizza(dayLogs: Record<ISODate, unknown>, periodsEsistenti: Periodo[]): Periodo[] {
+  const dates = Object.keys(dayLogs).sort();
+
+  if (dates.length === 0) return [];
+
+  const groups: ISODate[][] = [];
+  let currentGroup: ISODate[] = [dates[0]];
+
+  for (let i = 1; i < dates.length; i++) {
+    const gap = diffDays(dates[i - 1], dates[i]);
+    if (gap <= TOLLERANZA) {
+      currentGroup.push(dates[i]);
+    } else {
+      groups.push(currentGroup);
+      currentGroup = [dates[i]];
+    }
+  }
+  groups.push(currentGroup);
+
+  const newPeriods = groups.map((group) => {
+    const inizio = group[0];
+    const fine = group[group.length - 1];
+
+    const existing = periodsEsistenti.find((p) => p.inizio === inizio);
+    const id = existing?.id ?? nuovoId();
+
+    return { id, inizio, fine };
+  });
+
+  return ordina(newPeriods);
+}
 
 /**
  * Registra un giorno di flusso.
@@ -23,46 +65,14 @@ const contiene = (p: Periodo, d: ISODate) => d >= p.inizio && d <= p.fine;
  */
 export function registraGiorno(stato: Stato, data: ISODate, flusso: Flusso, nota?: string): Stato {
   const dayLogs = { ...stato.dayLogs, [data]: nota ? { flusso, nota } : { flusso } };
-  const periods = ordina(stato.periods);
-
-  const dentro = periods.find((p) => contiene(p, data));
-  if (dentro) return { ...stato, dayLogs };
-
-  const daEstendereAvanti = periods.find((p) => {
-    const scarto = diffDays(p.fine, data);
-    return scarto > 0 && scarto <= TOLLERANZA;
-  });
-  if (daEstendereAvanti) {
-    return {
-      ...stato,
-      dayLogs,
-      periods: periods.map((p) => (p.id === daEstendereAvanti.id ? { ...p, fine: data } : p)),
-    };
-  }
-
-  const daEstendereIndietro = periods.find((p) => {
-    const scarto = diffDays(data, p.inizio);
-    return scarto > 0 && scarto <= TOLLERANZA;
-  });
-  if (daEstendereIndietro) {
-    return {
-      ...stato,
-      dayLogs,
-      periods: periods.map((p) => (p.id === daEstendereIndietro.id ? { ...p, inizio: data } : p)),
-    };
-  }
-
-  return {
-    ...stato,
-    dayLogs,
-    periods: ordina([...periods, { id: nuovoId(), inizio: data, fine: data }]),
-  };
+  const periods = normalizza(dayLogs, stato.periods);
+  return { ...stato, dayLogs, periods };
 }
 
 /**
  * Rimuove un giorno dal diario e riallinea i cicli.
- * Se il giorno era centrale, il ciclo viene spezzato in due: è un caso raro,
- * ma va gestito senza lasciare periodi che contengono giorni non registrati.
+ * I cicli vengono automaticamente ricalcolati dal normalizzer, il quale garantisce
+ * che ogni boundary di un periodo è un giorno effettivamente registrato.
  */
 export function rimuoviGiorno(stato: Stato, data: ISODate): Stato {
   if (!stato.dayLogs[data]) return stato;
@@ -70,22 +80,8 @@ export function rimuoviGiorno(stato: Stato, data: ISODate): Stato {
   const dayLogs = { ...stato.dayLogs };
   delete dayLogs[data];
 
-  const contenitore = stato.periods.find((p) => contiene(p, data));
-  if (!contenitore) return { ...stato, dayLogs };
-
-  const risultanti: Periodo[] = [];
-  if (data > contenitore.inizio) {
-    risultanti.push({ ...contenitore, fine: addDays(data, -1) });
-  }
-  if (data < contenitore.fine) {
-    risultanti.push({ id: nuovoId(), inizio: addDays(data, 1), fine: contenitore.fine });
-  }
-
-  return {
-    ...stato,
-    dayLogs,
-    periods: ordina([...stato.periods.filter((p) => p.id !== contenitore.id), ...risultanti]),
-  };
+  const periods = normalizza(dayLogs, stato.periods);
+  return { ...stato, dayLogs, periods };
 }
 
 /** Il ciclo è "in corso" se l'ultimo giorno registrato dista non più di TOLLERANZA da oggi. */
