@@ -39,14 +39,14 @@ describe('condividiFile', () => {
     expect(share).toHaveBeenCalledWith({ files: [file], title: 'Titolo di prova' });
   });
 
-  it('tratta l\'annullamento dell\'utente (AbortError) come "condiviso", non come errore', async () => {
+  it('tratta la chiusura del pannello (AbortError) come "annullato", non come successo', async () => {
     const canShare = vi.fn().mockReturnValue(true);
     const share = vi.fn().mockRejectedValue(new DOMException('Annullato dall\'utente', 'AbortError'));
     definisciNavigatorShare(canShare, share);
 
     const esito = await condividiFile(fileDiProva(), 'Titolo di prova');
 
-    expect(esito).toBe('condiviso');
+    expect(esito).toBe('annullato');
   });
 
   it('ripiega sul download quando la condivisione fallisce per un altro motivo', async () => {
@@ -74,8 +74,13 @@ describe('condividiFile', () => {
   });
 
   it('scarica direttamente quando "canShare" non esiste affatto', async () => {
+    // Non dipende dall'afterEach del test precedente: rimuove esplicitamente
+    // entrambe le proprietà, per restare valido indipendentemente dall'ordine
+    // di esecuzione dei test.
     // @ts-expect-error simula un browser senza Web Share API: canShare assente, non solo falsy.
     delete navigator.canShare;
+    // @ts-expect-error idem per share, così il test non dipende da uno stato lasciato da altri test.
+    delete navigator.share;
 
     const createObjectURL = vi.fn().mockReturnValue('blob:finto');
     URL.createObjectURL = createObjectURL;
@@ -93,5 +98,57 @@ describe('condividiFile', () => {
     expect(createObjectURL).toHaveBeenCalledWith(file);
     expect(ancoraCliccata).not.toBeNull();
     expect(ancoraCliccata!.download).toBe('prova.ics');
+  });
+
+  it('scarica direttamente quando "canShare" esiste ma restituisce false per questo file', async () => {
+    const canShare = vi.fn().mockReturnValue(false);
+    const share = vi.fn();
+    definisciNavigatorShare(canShare, share);
+
+    const createObjectURL = vi.fn().mockReturnValue('blob:finto');
+    URL.createObjectURL = createObjectURL;
+    URL.revokeObjectURL = vi.fn();
+
+    let ancoraCliccata: HTMLAnchorElement | null = null;
+    vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(function (this: HTMLAnchorElement) {
+      ancoraCliccata = this;
+    });
+
+    const file = fileDiProva();
+    const esito = await condividiFile(file, 'Titolo di prova');
+
+    expect(esito).toBe('scaricato');
+    expect(canShare).toHaveBeenCalledWith({ files: [file] });
+    expect(share).not.toHaveBeenCalled();
+    expect(createObjectURL).toHaveBeenCalledWith(file);
+    expect(ancoraCliccata).not.toBeNull();
+    expect(ancoraCliccata!.download).toBe('prova.ics');
+  });
+
+  it("revoca l'URL dell'oggetto 10 secondi dopo il download", async () => {
+    // @ts-expect-error simula assenza di canShare per forzare il ramo di download.
+    delete navigator.canShare;
+
+    const createObjectURL = vi.fn().mockReturnValue('blob:finto');
+    const revokeObjectURL = vi.fn();
+    URL.createObjectURL = createObjectURL;
+    URL.revokeObjectURL = revokeObjectURL;
+
+    vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(() => {});
+
+    vi.useFakeTimers();
+    try {
+      const file = fileDiProva();
+      const esito = await condividiFile(file, 'Titolo di prova');
+
+      expect(esito).toBe('scaricato');
+      expect(revokeObjectURL).not.toHaveBeenCalled();
+
+      vi.advanceTimersByTime(10_000);
+
+      expect(revokeObjectURL).toHaveBeenCalledWith('blob:finto');
+    } finally {
+      vi.useRealTimers();
+    }
   });
 });

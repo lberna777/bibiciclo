@@ -1,6 +1,8 @@
 import { useState } from 'react';
 import { condividiFile } from './lib/share';
 
+type Esito = '' | 'condiviso' | 'scaricato' | 'annullato';
+
 const ICS_PROVA = [
   'BEGIN:VCALENDAR',
   'VERSION:2.0',
@@ -16,7 +18,7 @@ const ICS_PROVA = [
 ].join('\r\n');
 
 export default function App() {
-  const [esito, setEsito] = useState('');
+  const [esito, setEsito] = useState<Esito>('');
 
   async function prova() {
     const file = new File([ICS_PROVA], 'prova.ics', { type: 'text/calendar' });
