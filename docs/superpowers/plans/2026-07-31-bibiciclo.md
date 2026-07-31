@@ -292,9 +292,11 @@ Al termine di questa task l'app — ancora vuota — deve essere installabile su
 
 - [ ] **Step 1: Creare l'icona sorgente `public/icona.svg`**
 
+Il fondo riempie tutta la tela senza angoli arrotondati: iOS applica da sé la maschera all'`apple-touch-icon`, e le zone trasparenti le comporrebbe su nero.
+
 ```svg
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
-  <rect width="512" height="512" rx="114" fill="#fce8ee"/>
+  <rect width="512" height="512" fill="#fce8ee"/>
   <circle cx="256" cy="256" r="150" fill="none" stroke="#d4547e" stroke-width="34"
           stroke-linecap="round" stroke-dasharray="700 943" transform="rotate(-90 256 256)"/>
   <circle cx="256" cy="256" r="58" fill="#d4547e"/>
@@ -303,7 +305,7 @@ Al termine di questa task l'app — ancora vuota — deve essere installabile su
 
 - [ ] **Step 2: Creare `scripts/make-icons.mjs`**
 
-iOS richiede PNG per l'icona della Home: un SVG nel manifest non basta.
+iOS richiede PNG per l'icona della Home: un SVG nel manifest non basta. Il `.flatten()` garantisce che il PNG non abbia pixel trasparenti.
 
 ```js
 import sharp from 'sharp';
@@ -317,7 +319,11 @@ const misure = [
 ];
 
 for (const [file, size] of misure) {
-  await sharp(svg).resize(size, size).png().toFile(file);
+  await sharp(svg)
+    .resize(size, size)
+    .flatten({ background: '#fce8ee' })
+    .png()
+    .toFile(file);
   console.log('creato', file, size);
 }
 ```
