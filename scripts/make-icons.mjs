@@ -9,6 +9,10 @@ const misure = [
 ];
 
 for (const [file, size] of misure) {
-  await sharp(svg).resize(size, size).png().toFile(file);
+  await sharp(svg)
+    .resize(size, size)
+    .flatten({ background: '#fce8ee' })
+    .png()
+    .toFile(file);
   console.log('creato', file, size);
 }
