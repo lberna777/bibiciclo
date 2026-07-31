@@ -1,3 +1,11 @@
+/**
+ * IMPORTANT: This test suite requires TZ=Europe/Rome to run correctly.
+ * The npm scripts (test, test:watch) set this automatically, but direct
+ * vitest invocations (e.g., `npx vitest`, IDE test runners) will fail the
+ * `oggi()` test if run in a different timezone. Set TZ=Europe/Rome before
+ * running vitest directly if testing outside Rome's timezone.
+ */
+
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { addDays, diffDays, confronta, formattaLunga, formattaCorta, giornoSettimana, giorniDelMese, oggi, nomeMese } from './dates';
 
