@@ -53,6 +53,23 @@ export default function Oggi() {
             Qualche giorno di scarto è normale e capita a tutte.
           </p>
         </>
+      ) : p && p.giorniAlProssimo === 0 ? (
+        <>
+          <h1 className="mt-2 text-[26px] font-extrabold leading-tight tracking-tight">
+            Il ciclo dovrebbe
+            <br />arrivare <span className="text-rosa">oggi</span>
+          </h1>
+          <p className="mt-2.5 text-sm leading-relaxed text-inchiostro/65">
+            {p.irregolare ? 'Intorno a ' : ''}
+            {formattaLunga(p.prossimoInizio)}.
+            <br />
+            {fertile(g) ? (
+              <>Questo giorno sei nel <b className="text-verde-scuro">periodo fertile</b>.</>
+            ) : (
+              <>Periodo fertile dal {formattaLunga(p.fertileInizio)}.</>
+            )}
+          </p>
+        </>
       ) : p ? (
         <>
           <h1 className="mt-2 text-[26px] font-extrabold leading-tight tracking-tight">
