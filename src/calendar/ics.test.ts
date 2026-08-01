@@ -3,6 +3,7 @@ import { eventiPrevisti, generaIcs } from './ics';
 import type { Periodo } from '../types';
 
 const unCiclo: Periodo[] = [{ id: 'p1', inizio: '2026-07-03', fine: '2026-07-07' }];
+const altriCicli: Periodo[] = [{ id: 'p1', inizio: '2026-06-05', fine: '2026-06-09' }];
 
 describe('eventiPrevisti', () => {
   it('è vuoto senza cicli registrati', () => {
@@ -31,10 +32,19 @@ describe('eventiPrevisti', () => {
     expect(primo.fineEsclusa).toBe('2026-08-05');
   });
 
-  it('assegna UID deterministici, così una nuova esportazione aggiorna invece di duplicare', () => {
+  it('mantiene UIDs slot-based stabili anche con storia diversa', () => {
     const a = eventiPrevisti(unCiclo, 28, '2026-07-16');
-    const b = eventiPrevisti(unCiclo, 28, '2026-07-20');
-    expect(a[0].uid).toBe(b[0].uid);
+    const b = eventiPrevisti(altriCicli, 28, '2026-07-16');
+    // UIDs sono basati su slot (1..6), non sulle date
+    expect(a[0].uid).toBe('bibiciclo-ciclo-1@bibiciclo');
+    expect(b[0].uid).toBe('bibiciclo-ciclo-1@bibiciclo');
+  });
+
+  it('assegna 12 UID distinti per 6 cicli', () => {
+    const e = eventiPrevisti(unCiclo, 28, '2026-07-16');
+    const uids = e.map((x) => x.uid);
+    const uniche = new Set(uids);
+    expect(uniche.size).toBe(12);
   });
 });
 
@@ -56,12 +66,51 @@ describe('generaIcs', () => {
     expect(ics()).toContain('DTEND;VALUE=DATE:20260805');
   });
 
-  it('include un avviso a due giorni di anticipo per il ciclo', () => {
-    expect(ics()).toContain('TRIGGER:-P2D');
+  it('include SEQUENCE per ogni evento', () => {
+    expect(ics()).toContain('SEQUENCE:0');
+  });
+
+  it('include avvisi solo per gli eventi ciclo, esattamente 6', () => {
+    const output = ics();
+    const alarmCount = (output.match(/BEGIN:VALARM/g) || []).length;
+    expect(alarmCount).toBe(6);
+  });
+
+  it('gli avvisi ciclo hanno trigger a due giorni di anticipo', () => {
+    const output = ics();
+    const alarmMatches = output.match(/BEGIN:VALARM[\s\S]*?END:VALARM/g) || [];
+    expect(alarmMatches.length).toBe(6);
+    alarmMatches.forEach((alarm) => {
+      expect(alarm).toContain('TRIGGER:-P2D');
+    });
+  });
+
+  it('nessun evento fertile contiene VALARM', () => {
+    const output = ics();
+    const fertileEvents = output.match(/UID:bibiciclo-fertile-\d+[\s\S]*?END:VEVENT/g) || [];
+    expect(fertileEvents.length).toBe(6);
+    fertileEvents.forEach((event) => {
+      expect(event).not.toContain('VALARM');
+    });
   });
 
   it('contiene un VEVENT per ogni evento', () => {
     const n = ics().match(/BEGIN:VEVENT/g)!.length;
     expect(n).toBe(12);
+  });
+
+  it('escapa caratteri speciali nei titoli', () => {
+    const evento = [
+      { uid: 'test', titolo: 'Titolo; con, separatori \\ e\nnewline', inizio: '2026-07-31' as const, fineEsclusa: '2026-08-05' as const, tipo: 'ciclo' as const },
+    ];
+    const output = generaIcs(evento);
+    expect(output).toContain('SUMMARY:Titolo\\; con\\, separatori \\\\ e\\nnewline');
+  });
+
+  it('accetta sequenza nei parametri', () => {
+    const e = eventiPrevisti(unCiclo, 28, '2026-07-16');
+    const output = generaIcs(e, 42);
+    const matches = output.match(/SEQUENCE:42/g) || [];
+    expect(matches.length).toBe(12);
   });
 });

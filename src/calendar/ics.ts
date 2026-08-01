@@ -1,11 +1,15 @@
 import type { ISODate, Periodo } from '../types';
 import { addDays } from '../core/dates';
-import { durataMediana, durataMestruazioni, previsione } from '../core/cycle';
+import {
+  durataMediana,
+  durataMestruazioni,
+  previsione,
+  GIORNI_FASE_LUTEALE,
+  FERTILE_PRIMA,
+  FERTILE_DOPO,
+} from '../core/cycle';
 
 const CICLI_ESPORTATI = 6;
-const GIORNI_FASE_LUTEALE = 14;
-const FERTILE_PRIMA = 5;
-const FERTILE_DOPO = 1;
 
 export interface EventoPrevisto {
   uid: string;
@@ -19,9 +23,22 @@ export interface EventoPrevisto {
 const compatta = (d: ISODate) => d.replace(/-/g, '');
 
 /**
+ * Escapa i caratteri speciali secondo RFC 5545 per parametri di testo in iCalendar.
+ */
+function escapeText(text: string): string {
+  return text
+    .replace(/\\/g, '\\\\')
+    .replace(/;/g, '\\;')
+    .replace(/,/g, '\\,')
+    .replace(/\n/g, '\\n');
+}
+
+/**
  * Prossimi cicli previsti e relative finestre fertili.
- * Gli UID sono derivati dalla data, così riesportare aggiorna gli eventi
- * esistenti nel calendario anziché duplicarli.
+ * Gli UID sono slot-based (ciclo-1, ciclo-2, ...) e stabili tra le esportazioni,
+ * così un calendario che onora gli UID aggiornerà gli eventi esistenti anziché duplicarli.
+ * Tuttavia, non possiamo garantire come iOS gestisca gli aggiornamenti per UID;
+ * se compaiono duplicati, gli eventi precedenti possono essere eliminati manualmente.
  */
 export function eventiPrevisti(
   periods: Periodo[],
@@ -38,8 +55,9 @@ export function eventiPrevisti(
 
   for (let i = 0; i < quanti; i++) {
     const inizio = addDays(p.prossimoInizio, durata * i);
+    const n = i + 1;
     eventi.push({
-      uid: `ciclo-${compatta(inizio)}@bibiciclo`,
+      uid: `bibiciclo-ciclo-${n}@bibiciclo`,
       titolo: 'Ciclo previsto',
       inizio,
       fineEsclusa: addDays(inizio, mestruazioni),
@@ -49,7 +67,7 @@ export function eventiPrevisti(
     const ovulazione = addDays(inizio, -GIORNI_FASE_LUTEALE);
     const fertileInizio = addDays(ovulazione, -FERTILE_PRIMA);
     eventi.push({
-      uid: `fertile-${compatta(fertileInizio)}@bibiciclo`,
+      uid: `bibiciclo-fertile-${n}@bibiciclo`,
       titolo: 'Periodo fertile (stima)',
       inizio: fertileInizio,
       fineEsclusa: addDays(ovulazione, FERTILE_DOPO + 1),
@@ -60,7 +78,7 @@ export function eventiPrevisti(
   return eventi;
 }
 
-export function generaIcs(eventi: EventoPrevisto[]): string {
+export function generaIcs(eventi: EventoPrevisto[], sequenza = 0): string {
   const stamp = new Date().toISOString().replace(/[-:]/g, '').replace(/\.\d{3}/, '');
 
   const righe: string[] = [
@@ -76,16 +94,17 @@ export function generaIcs(eventi: EventoPrevisto[]): string {
       'BEGIN:VEVENT',
       `UID:${e.uid}`,
       `DTSTAMP:${stamp}`,
+      `SEQUENCE:${sequenza}`,
       `DTSTART;VALUE=DATE:${compatta(e.inizio)}`,
       `DTEND;VALUE=DATE:${compatta(e.fineEsclusa)}`,
-      `SUMMARY:${e.titolo}`,
+      `SUMMARY:${escapeText(e.titolo)}`,
       'TRANSP:TRANSPARENT',
     );
     if (e.tipo === 'ciclo') {
       righe.push(
         'BEGIN:VALARM',
         'ACTION:DISPLAY',
-        'DESCRIPTION:Il ciclo dovrebbe arrivare fra due giorni',
+        `DESCRIPTION:${escapeText('Il ciclo dovrebbe arrivare fra due giorni')}`,
         'TRIGGER:-P2D',
         'END:VALARM',
       );

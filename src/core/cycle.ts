@@ -5,9 +5,9 @@ const CICLI_CONSIDERATI = 6;
 const DURATA_MIN = 21;
 const DURATA_MAX = 45;
 const SOGLIA_IRREGOLARITA = 7;
-const GIORNI_FASE_LUTEALE = 14;
-const FERTILE_PRIMA = 5;
-const FERTILE_DOPO = 1;
+export const GIORNI_FASE_LUTEALE = 14;
+export const FERTILE_PRIMA = 5;
+export const FERTILE_DOPO = 1;
 const DURATA_MESTRUAZIONI_DEFAULT = 5;
 
 export interface Previsione {
