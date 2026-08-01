@@ -4,6 +4,7 @@ import TabBar from './components/TabBar';
 import Onboarding from './screens/Onboarding';
 import Oggi from './screens/Oggi';
 import Calendario from './screens/Calendario';
+import Impostazioni from './screens/Impostazioni';
 
 export default function App() {
   const pronto = useStore((s) => s.pronto);
@@ -45,7 +46,7 @@ export default function App() {
         )}
         {tab === 'oggi' && <Oggi />}
         {tab === 'calendario' && <Calendario />}
-        {tab === 'impostazioni' && <div>Impostazioni (Task 15)</div>}
+        {tab === 'impostazioni' && <Impostazioni />}
       </main>
       <TabBar />
     </div>
