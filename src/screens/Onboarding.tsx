@@ -121,13 +121,14 @@ function SelettoreData({ valore, onCambia }: { valore: string; onCambia: (d: str
     else setMese(m);
   }
 
-  // Calcola il primo giorno del mese se si naviga indietro
-  const meseIndietro = mese === 1
-    ? `${anno - 1}-12-01`
-    : `${anno}-${String(mese - 1).padStart(2, '0')}-01`;
-  const canNavIndietro = meseIndietro >= minimo;
+  // Verifica se si può navigare indietro: l'ultimo giorno del mese precedente deve essere >= minimo
+  const prevAnno = mese === 1 ? anno - 1 : anno;
+  const prevMese = mese === 1 ? 12 : mese - 1;
+  const giorniPrevMese = giorniDelMese(prevAnno, prevMese);
+  const ultimoGiornoPrev = giorniPrevMese[giorniPrevMese.length - 1];
+  const canNavIndietro = ultimoGiornoPrev >= minimo;
 
-  // Calcola il primo giorno del mese se si naviga avanti
+  // Verifica se si può navigare avanti: il primo giorno del mese successivo deve essere <= limite
   const meseAvanti = mese === 12
     ? `${anno + 1}-01-01`
     : `${anno}-${String(mese + 1).padStart(2, '0')}-01`;
