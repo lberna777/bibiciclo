@@ -47,7 +47,7 @@ export default function Oggi() {
         <>
           <h1 className="mt-2 text-[26px] font-extrabold leading-tight tracking-tight">
             Il ciclo è in ritardo
-            <br />di <span className="text-rosa">{-p.giorniAlProssimo} giorni</span>
+            <br />di <span className="text-rosa">{-p.giorniAlProssimo} {-p.giorniAlProssimo === 1 ? 'giorno' : 'giorni'}</span>
           </h1>
           <p className="mt-2.5 text-sm leading-relaxed text-inchiostro/65">
             Qualche giorno di scarto è normale e capita a tutte.
@@ -74,7 +74,7 @@ export default function Oggi() {
         <>
           <h1 className="mt-2 text-[26px] font-extrabold leading-tight tracking-tight">
             Il ciclo arriva
-            <br />tra <span className="text-rosa">{p.giorniAlProssimo} giorni</span>
+            <br />tra <span className="text-rosa">{p.giorniAlProssimo} {p.giorniAlProssimo === 1 ? 'giorno' : 'giorni'}</span>
           </h1>
           <p className="mt-2.5 text-sm leading-relaxed text-inchiostro/65">
             {p.irregolare ? 'Intorno a ' : ''}
@@ -99,7 +99,7 @@ export default function Oggi() {
       {p?.durataVincolata && (
         <div className="mt-3 rounded-2xl border border-bordo bg-white p-3 text-[11px] leading-snug text-inchiostro/70">
           I tuoi cicli risultano più {p.durataMediana === 45 ? 'lunghi' : 'corti'} di quelli che
-          l'app sa prevedere bene, quindi sta usando {p.durataMediana} giorni. Se ti sembra
+          l'app sa prevedere bene, quindi sta usando {p.durataMediana} {p.durataMediana === 1 ? 'giorno' : 'giorni'}. Se ti sembra
           sbagliato, correggi la durata dalle impostazioni.
         </div>
       )}
