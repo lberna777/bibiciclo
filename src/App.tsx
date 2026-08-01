@@ -3,6 +3,7 @@ import { useStore } from './store';
 import TabBar from './components/TabBar';
 import Onboarding from './screens/Onboarding';
 import Oggi from './screens/Oggi';
+import Calendario from './screens/Calendario';
 
 export default function App() {
   const pronto = useStore((s) => s.pronto);
@@ -43,7 +44,7 @@ export default function App() {
           </p>
         )}
         {tab === 'oggi' && <Oggi />}
-        {tab === 'calendario' && <div>Calendario (Task 12)</div>}
+        {tab === 'calendario' && <Calendario />}
         {tab === 'impostazioni' && <div>Impostazioni (Task 15)</div>}
       </main>
       <TabBar />
