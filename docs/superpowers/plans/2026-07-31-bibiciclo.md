@@ -2042,7 +2042,11 @@ git commit -m "feat(ui): foglio di registrazione del flusso"
 
 - [ ] **Step 1: Creare `src/screens/Oggi.tsx`**
 
-La frase è la risposta scritta a parole. Tre casi distinti: ciclo in corso, ciclo in ritardo, attesa normale.
+La frase è la risposta scritta a parole. **Quattro** casi distinti, in quest'ordine: ciclo in corso, ciclo in ritardo, ciclo previsto **oggi**, attesa normale.
+
+Il caso "oggi" ha un ramo suo perché senza di esso la frase diventa "Il ciclo arriva tra 0 giorni" — proprio nel giorno in cui questa schermata conta di più. Diventa invece "Il ciclo dovrebbe arrivare oggi".
+
+Attenzione ai numeri: `{n} giorni` scrive "tra 1 giorni" il giorno prima e "in ritardo di 1 giorni" al primo giorno di ritardo. Il singolare va gestito, e numero e sostantivo devono stare dentro lo stesso `<span>` colorato, altrimenti l'evidenza copre solo la cifra.
 
 ```tsx
 import { useMemo, useState } from 'react';
@@ -2094,7 +2098,7 @@ export default function Oggi() {
         <>
           <h1 className="mt-2 text-[26px] font-extrabold leading-tight tracking-tight">
             Il ciclo è in ritardo
-            <br />di <span className="text-rosa">{-p.giorniAlProssimo} giorni</span>
+            <br />di <span className="text-rosa">{-p.giorniAlProssimo} {-p.giorniAlProssimo === 1 ? 'giorno' : 'giorni'}</span>
           </h1>
           <p className="mt-2.5 text-sm leading-relaxed text-inchiostro/65">
             Qualche giorno di scarto è normale e capita a tutte.
@@ -2104,7 +2108,7 @@ export default function Oggi() {
         <>
           <h1 className="mt-2 text-[26px] font-extrabold leading-tight tracking-tight">
             Il ciclo arriva
-            <br />tra <span className="text-rosa">{p.giorniAlProssimo} giorni</span>
+            <br />tra <span className="text-rosa">{p.giorniAlProssimo} {p.giorniAlProssimo === 1 ? 'giorno' : 'giorni'}</span>
           </h1>
           <p className="mt-2.5 text-sm leading-relaxed text-inchiostro/65">
             {p.irregolare ? 'Intorno a ' : ''}
