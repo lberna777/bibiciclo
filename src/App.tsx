@@ -2,6 +2,7 @@ import { useEffect } from 'react';
 import { useStore } from './store';
 import TabBar from './components/TabBar';
 import Onboarding from './screens/Onboarding';
+import Oggi from './screens/Oggi';
 
 export default function App() {
   const pronto = useStore((s) => s.pronto);
@@ -41,7 +42,7 @@ export default function App() {
             {errore}
           </p>
         )}
-        {tab === 'oggi' && <div>Oggi (Task 10)</div>}
+        {tab === 'oggi' && <Oggi />}
         {tab === 'calendario' && <div>Calendario (Task 12)</div>}
         {tab === 'impostazioni' && <div>Impostazioni (Task 15)</div>}
       </main>
