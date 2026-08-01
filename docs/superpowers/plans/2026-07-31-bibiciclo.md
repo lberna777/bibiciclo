@@ -2579,7 +2579,7 @@ git commit -m "feat: generazione degli eventi .ics per il Calendario iOS"
 - Consumes: `Stato` da `src/types`; `migra` da `src/storage/db`
 - Produces:
   - `esportaJson(stato: Stato): string`
-  - `importaJson(testo: string, oggi: ISODate): Stato` — lancia `Error` con messaggio in italiano se il file non è valido
+  - `importaJson(testo: string, oggi: ISODate): EsitoImport` — `{ stato, giorniScartati }`. Lancia `Error` con messaggio in italiano se il file non è valido
   - `nomeFileBackup(oggi: ISODate): string`
 
 - [ ] **Step 1: Scrivere i test in `src/storage/backup.test.ts`**
@@ -2756,8 +2756,15 @@ export default function Impostazioni() {
     if (!confirm('Questa operazione sostituisce tutti i dati attuali. Vuoi continuare?')) return;
 
     try {
-      await sostituisciStato(importaJson(await file.text(), oggi()));
-      setMessaggio('Dati ripristinati.');
+      const { stato: ripristinato, giorniScartati } = importaJson(await file.text(), oggi());
+      await sostituisciStato(ripristinato);
+      // Il ripristino sovrascrive il telefono: se il file conteneva voci
+      // illeggibili va detto, perche' quel file potrebbe essere l'ultima copia.
+      setMessaggio(
+        giorniScartati === 0
+          ? 'Dati ripristinati.'
+          : `Dati ripristinati, ma ${giorniScartati} ${giorniScartati === 1 ? 'giorno' : 'giorni'} del file non ${giorniScartati === 1 ? 'era leggibile' : 'erano leggibili'}. Se hai un'altra copia del backup, provala prima di segnare altro.`,
+      );
     } catch (err) {
       setMessaggio(err instanceof Error ? err.message : 'Non sono riuscita a leggere il file.');
     }
