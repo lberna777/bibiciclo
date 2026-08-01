@@ -45,16 +45,18 @@ export default function Calendario() {
   return (
     <>
       <div className="flex items-center justify-between text-base font-bold">
-        <button onClick={() => spostaMese(-1)} className="px-4 py-2 text-rosa">‹</button>
+        <button onClick={() => spostaMese(-1)} className="px-5 py-3 text-rosa">‹</button>
         <span>{nomeMese(mese)} {anno}</span>
-        <button onClick={() => spostaMese(1)} className="px-4 py-2 text-rosa">›</button>
+        <button onClick={() => spostaMese(1)} className="px-5 py-3 text-rosa">›</button>
       </div>
 
       <div className="mt-3 grid grid-cols-7 text-center text-[10px] text-tenue">
         {['L', 'M', 'M', 'G', 'V', 'S', 'D'].map((x, i) => <div key={i}>{x}</div>)}
       </div>
 
-      <div className="mt-1.5 grid grid-cols-7 gap-1.5">
+      {/* gap-1, non gap-1.5: su uno schermo da 375px serve a far arrivare
+          le celle a 44px, il minimo tocca­bile su iOS. */}
+      <div className="mt-1.5 grid grid-cols-7 gap-1">
         {Array.from({ length: vuoti }, (_, i) => <div key={`v${i}`} />)}
         {giorni.map((d) => (
           <button
