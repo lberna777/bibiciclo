@@ -31,7 +31,7 @@
 | `src/core/dates.ts` | Aritmetica e formattazione di date `YYYY-MM-DD` |
 | `src/core/cycle.ts` | Statistiche e previsioni. Funzioni pure |
 | `src/core/periods.ts` | Registrazione e rimozione di un giorno. Funzioni pure |
-| `src/storage/db.ts` | Unico accesso a IndexedDB, con versione di schema |
+| `src/storage/db.ts` | Unico accesso a IndexedDB. Filtra i dati corrotti e rideriva i cicli dal diario |
 | `src/storage/backup.ts` | Serializzazione e validazione del backup |
 | `src/calendar/ics.ts` | Generazione del file `.ics` |
 | `src/lib/share.ts` | Consegna di un file all'utente (condivisione nativa o download) |
@@ -1622,6 +1622,7 @@ import TabBar from './components/TabBar';
 
 export default function App() {
   const pronto = useStore((s) => s.pronto);
+  const errore = useStore((s) => s.errore);
   const tab = useStore((s) => s.tab);
   const carica = useStore((s) => s.carica);
   const periods = useStore((s) => s.stato.periods);
@@ -1630,6 +1631,20 @@ export default function App() {
     void carica();
   }, [carica]);
 
+  // Lettura fallita: non si entra nell'app con uno stato vuoto, perché la prima
+  // scrittura sovrascriverebbe dati che sono solo temporaneamente illeggibili.
+  if (!pronto && errore) {
+    return (
+      <div className="flex h-full flex-col items-center justify-center gap-3 px-8 text-center">
+        <p className="text-lg font-bold">{errore}</p>
+        <p className="text-sm text-inchiostro/70">
+          Prova a chiudere e riaprire l'app. Non disinstallarla: i tuoi dati sono ancora sul
+          telefono.
+        </p>
+      </div>
+    );
+  }
+
   if (!pronto) return <div className="p-6 text-tenue">Un attimo…</div>;
 
   if (periods.length === 0) return <div className="p-6">Onboarding (Task 9)</div>;
@@ -1637,6 +1652,12 @@ export default function App() {
   return (
     <div className="flex h-full flex-col">
       <main className="flex-1 overflow-y-auto px-5 pt-[max(1.25rem,env(safe-area-inset-top))]">
+        {/* Scrittura fallita: la modifica è viva in memoria ma non è su disco. */}
+        {errore && (
+          <p className="mb-4 rounded-2xl bg-rosa-chiaro px-4 py-3 text-[13px] font-semibold text-rosa-scuro">
+            {errore}
+          </p>
+        )}
         {tab === 'oggi' && <div>Oggi (Task 10)</div>}
         {tab === 'calendario' && <div>Calendario (Task 12)</div>}
         {tab === 'impostazioni' && <div>Impostazioni (Task 15)</div>}

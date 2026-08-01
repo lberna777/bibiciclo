@@ -46,7 +46,7 @@ La regola strutturale: **tutta la matematica del ciclo sta in funzioni pure che 
 | `core/dates.ts` | Aritmetica su date in formato `YYYY-MM-DD` | nessuna |
 | `core/cycle.ts` | `prossimoCiclo()`, `finestraFertile()`, `statistiche()` | `core/dates` |
 | `core/periods.ts` | `registraGiorno(stato, data, flusso, nota) → nuovo stato` | `core/dates` |
-| `storage/db.ts` | Unico punto di accesso a IndexedDB, con versione di schema | `idb-keyval` |
+| `storage/db.ts` | Unico punto di accesso a IndexedDB. Fa da filtro ai dati corrotti: scarta le voci di diario illeggibili e rideriva i cicli invece di fidarsi di quelli salvati | `idb-keyval`, `core/periods` |
 | `storage/backup.ts` | Esporta/importa JSON, con validazione in ingresso | `core/*` |
 | `calendar/ics.ts` | Genera il file `.ics` e lo passa alla condivisione iOS | `core/cycle` |
 | `store.ts` | Stato Zustand: contiene i dati, delega i calcoli a `core/` | `core/*`, `storage/db` |
