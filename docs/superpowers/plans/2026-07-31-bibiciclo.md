@@ -17,6 +17,7 @@
 - **Target:** Safari su iOS 16.4+, in modalità standalone (installata sulla Home).
 - **Nome dell'app:** `BibiCiclo`. Base path di deploy: `/bibiciclo/`.
 - **Avvertenza sanitaria:** il testo di §6 della specifica va riportato verbatim dove indicato. Non riformularlo.
+- **Aree di tocco:** ogni controllo interattivo deve essere alto e largo almeno **44px** (minimo iOS). `text-sm` ha interlinea 20px, quindi serve `py-3`; un bottone di testo senza padding verticale è 20px e va corretto. Verificare misurando l'elemento renderizzato, non a occhio.
 - **Intervalli fissi:** durata ciclo vincolata a 21–45 giorni; finestra fertile da ovulazione−5 a ovulazione+1; ovulazione = prossimo inizio − 14 giorni; soglia di irregolarità 7 giorni di escursione; tolleranza di continuità di un ciclo 2 giorni.
 
 **Specifica di riferimento:** `docs/superpowers/specs/2026-07-31-bibiciclo-design.md`
@@ -1997,7 +1998,7 @@ export default function FoglioRegistrazione({ data, onChiudi, onScegliGiorno }: 
           Salva
         </button>
 
-        <button onClick={onScegliGiorno} className="mt-3 w-full text-center text-sm text-tenue">
+        <button onClick={onScegliGiorno} className="mt-3 w-full py-3 text-center text-sm text-tenue">
           È già iniziato? Scegli il giorno giusto ›
         </button>
 
@@ -2165,7 +2166,7 @@ export default function Oggi() {
         🩸 {registratoOggi ? 'Modifica il ciclo di oggi' : 'Oggi mi è venuto'}
       </button>
 
-      <button onClick={() => setTab('calendario')} className="mt-4 w-full text-center text-[13px] text-tenue">
+      <button onClick={() => setTab('calendario')} className="mt-4 w-full py-3 text-center text-[13px] text-tenue">
         Vedi il calendario ›
       </button>
 
@@ -2274,16 +2275,18 @@ export default function Calendario() {
   return (
     <>
       <div className="flex items-center justify-between text-base font-bold">
-        <button onClick={() => spostaMese(-1)} className="px-4 py-2 text-rosa">‹</button>
+        <button onClick={() => spostaMese(-1)} className="px-5 py-3 text-rosa">‹</button>
         <span>{nomeMese(mese)} {anno}</span>
-        <button onClick={() => spostaMese(1)} className="px-4 py-2 text-rosa">›</button>
+        <button onClick={() => spostaMese(1)} className="px-5 py-3 text-rosa">›</button>
       </div>
 
       <div className="mt-3 grid grid-cols-7 text-center text-[10px] text-tenue">
         {['L', 'M', 'M', 'G', 'V', 'S', 'D'].map((x, i) => <div key={i}>{x}</div>)}
       </div>
 
-      <div className="mt-1.5 grid grid-cols-7 gap-1.5">
+      {/* gap-1, non gap-1.5: su uno schermo da 375px serve a far arrivare
+          le celle a 44px, il minimo tocca­bile su iOS. */}
+      <div className="mt-1.5 grid grid-cols-7 gap-1">
         {Array.from({ length: vuoti }, (_, i) => <div key={`v${i}`} />)}
         {giorni.map((d) => (
           <button
@@ -2791,14 +2794,14 @@ export default function Impostazioni() {
           <div className="flex items-center gap-3">
             <button
               onClick={() => void aggiornaDurataMedia(Math.max(21, stato.settings.cicloMedioDichiarato - 1))}
-              className="h-9 w-9 rounded-full border border-bordo text-xl text-rosa"
+              className="h-11 w-11 rounded-full border border-bordo text-xl text-rosa"
             >
               −
             </button>
             <span className="w-7 text-center text-lg font-bold">{stato.settings.cicloMedioDichiarato}</span>
             <button
               onClick={() => void aggiornaDurataMedia(Math.min(45, stato.settings.cicloMedioDichiarato + 1))}
-              className="h-9 w-9 rounded-full border border-bordo text-xl text-rosa"
+              className="h-11 w-11 rounded-full border border-bordo text-xl text-rosa"
             >
               +
             </button>
