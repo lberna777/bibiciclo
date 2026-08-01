@@ -1,37 +1,50 @@
-import { useState } from 'react';
-import { condividiFile } from './lib/share';
-
-type Esito = '' | 'condiviso' | 'scaricato' | 'annullato';
-
-const ICS_PROVA = [
-  'BEGIN:VCALENDAR',
-  'VERSION:2.0',
-  'PRODID:-//BibiCiclo//IT',
-  'BEGIN:VEVENT',
-  'UID:prova@bibiciclo',
-  'DTSTAMP:20260731T120000Z',
-  'DTSTART;VALUE=DATE:20260810',
-  'DTEND;VALUE=DATE:20260811',
-  'SUMMARY:Prova BibiCiclo',
-  'END:VEVENT',
-  'END:VCALENDAR',
-].join('\r\n');
+import { useEffect } from 'react';
+import { useStore } from './store';
+import TabBar from './components/TabBar';
 
 export default function App() {
-  const [esito, setEsito] = useState<Esito>('');
+  const pronto = useStore((s) => s.pronto);
+  const errore = useStore((s) => s.errore);
+  const tab = useStore((s) => s.tab);
+  const carica = useStore((s) => s.carica);
+  const periods = useStore((s) => s.stato.periods);
 
-  async function prova() {
-    const file = new File([ICS_PROVA], 'prova.ics', { type: 'text/calendar' });
-    setEsito(await condividiFile(file, 'Prova BibiCiclo'));
+  useEffect(() => {
+    void carica();
+  }, [carica]);
+
+  // Lettura fallita: non si entra nell'app con uno stato vuoto, perché la prima
+  // scrittura sovrascriverebbe dati che sono solo temporaneamente illeggibili.
+  if (!pronto && errore) {
+    return (
+      <div className="flex h-full flex-col items-center justify-center gap-3 px-8 text-center">
+        <p className="text-lg font-bold">{errore}</p>
+        <p className="text-sm text-inchiostro/70">
+          Prova a chiudere e riaprire l'app. Non disinstallarla: i tuoi dati sono ancora sul
+          telefono.
+        </p>
+      </div>
+    );
   }
 
+  if (!pronto) return <div className="p-6 text-tenue">Un attimo…</div>;
+
+  if (periods.length === 0) return <div className="p-6">Onboarding (Task 9)</div>;
+
   return (
-    <div className="p-6 space-y-4">
-      <h1 className="text-2xl font-bold">Prova condivisione</h1>
-      <button onClick={prova} className="w-full rounded-2xl bg-rosa px-4 py-4 font-bold text-white">
-        Condividi un evento di prova
-      </button>
-      <p className="text-tenue">Esito: {esito || '—'}</p>
+    <div className="flex h-full flex-col">
+      <main className="flex-1 overflow-y-auto px-5 pt-[max(1.25rem,env(safe-area-inset-top))]">
+        {/* Scrittura fallita: la modifica è viva in memoria ma non è su disco. */}
+        {errore && (
+          <p className="mb-4 rounded-2xl bg-rosa-chiaro px-4 py-3 text-[13px] font-semibold text-rosa-scuro">
+            {errore}
+          </p>
+        )}
+        {tab === 'oggi' && <div>Oggi (Task 10)</div>}
+        {tab === 'calendario' && <div>Calendario (Task 12)</div>}
+        {tab === 'impostazioni' && <div>Impostazioni (Task 15)</div>}
+      </main>
+      <TabBar />
     </div>
   );
 }
