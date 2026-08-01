@@ -10,6 +10,10 @@
   --color-bordo: #f0dfe4;
   --color-verde: #dcefe6;
   --color-verde-scuro: #3f7a63;
+  /* Riempimento più marcato di --color-verde, usato solo per il giorno
+     fertile: quello semplice, sulla crema di fondo, era il segnale più
+     debole della griglia — sul cellulare risultava quasi invisibile. */
+  --color-verde-medio: #c8ecd9;
 }
 
 html, body, #root { height: 100%; }

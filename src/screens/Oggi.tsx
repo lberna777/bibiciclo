@@ -123,7 +123,11 @@ export default function Oggi() {
               <div className="text-[9px] text-tenue">{INIZIALI[i]}</div>
               <div
                 className={`mt-1 rounded-xl py-1.5 text-sm font-semibold ${
-                  oggiQ ? 'bg-rosa text-white' : f ? 'bg-verde text-verde-scuro' : 'bg-rosa-chiaro/50 text-inchiostro/70'
+                  oggiQ
+                    ? 'bg-rosa text-white'
+                    : f
+                      ? 'border border-verde-scuro bg-verde-medio text-verde-scuro'
+                      : 'bg-rosa-chiaro/50 text-inchiostro/70'
                 }`}
               >
                 {Number(d.slice(8, 10))}

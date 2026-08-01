@@ -3,15 +3,16 @@ import { diffDays, oggi } from '../core/dates';
 import { DURATA_MAX, DURATA_MIN } from '../core/cycle';
 import { eventiPrevisti, generaIcs } from '../calendar/ics';
 import { esportaJson, importaJson, nomeFileBackup } from '../storage/backup';
-import { condividiFile } from '../lib/share';
+import { apriCalendario, condividiFile } from '../lib/share';
 import { useStore } from '../store';
 import Avvertenza from '../components/Avvertenza';
 
 /**
- * Un messaggio per ciascun esito di `condividiFile`. Su 'annullato' non si
+ * Un messaggio per ciascun esito di `apriCalendario`. Su 'annullato' non si
  * dichiara un successo: il pannello si è chiuso senza consegnare il file.
  */
 const MESSAGGI_CALENDARIO = {
+  aperto: 'Tocca "Aggiungi tutti gli eventi" nella schermata che si è aperta.',
   condiviso: 'Scegli "Calendario" per aggiungere le date.',
   scaricato: 'File scaricato: aprilo dall\'app File per aggiungerlo al Calendario.',
   annullato: 'Non è stato aggiunto niente. Riprova quando vuoi.',
@@ -40,8 +41,7 @@ export default function Impostazioni() {
     // numero di sequenza è più alto. I giorni trascorsi dall'installazione
     // crescono da soli, senza bisogno di memorizzare un contatore.
     const sequenza = diffDays(stato.settings.dataInstallazione, oggi());
-    const file = new File([generaIcs(eventi, sequenza)], 'bibiciclo.ics', { type: 'text/calendar' });
-    const esito = await condividiFile(file, 'Date di BibiCiclo');
+    const esito = await apriCalendario(generaIcs(eventi, sequenza));
     setMessaggio(MESSAGGI_CALENDARIO[esito]);
   }
 
@@ -84,7 +84,8 @@ export default function Impostazioni() {
         </button>
         <p className="text-[11px] leading-snug text-tenue">
           Aggiunge al Calendario dell'iPhone i prossimi sei cicli previsti, con un avviso due
-          giorni prima. Rifallo ogni tanto: le previsioni migliorano man mano che segni i cicli.
+          giorni prima — la schermata che si apre può variare a seconda del telefono. Rifallo
+          ogni tanto: le previsioni migliorano man mano che segni i cicli.
         </p>
       </section>
 

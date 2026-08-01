@@ -39,7 +39,7 @@ export default function Calendario() {
     const bordoOggi = d === g ? ' outline outline-2 outline-inchiostro' : '';
     if (stato.dayLogs[d]) return 'bg-rosa font-bold text-white' + bordoOggi;
     if (previsti.has(d)) return 'border border-dashed border-rosa bg-rosa-chiaro text-rosa-scuro' + bordoOggi;
-    if (p && d >= p.fertileInizio && d <= p.fertileFine) return 'bg-verde text-verde-scuro' + bordoOggi;
+    if (p && d >= p.fertileInizio && d <= p.fertileFine) return 'border border-verde-scuro bg-verde-medio text-verde-scuro' + bordoOggi;
     return 'text-inchiostro/75' + bordoOggi;
   }
 
@@ -75,7 +75,7 @@ export default function Calendario() {
           <i className="inline-block h-2.5 w-2.5 rounded-full bg-rosa" />ciclo
         </span>
         <span className="flex items-center gap-1.5">
-          <i className="inline-block h-2.5 w-2.5 rounded-full bg-verde" />fertile
+          <i className="inline-block h-2.5 w-2.5 rounded-full border border-verde-scuro bg-verde-medio" />fertile
         </span>
         <span className="flex items-center gap-1.5">
           <i className="inline-block h-2.5 w-2.5 rounded-full border border-dashed border-rosa bg-rosa-chiaro" />previsto

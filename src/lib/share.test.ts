@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { condividiFile } from './share';
+import { apriCalendario, condividiFile } from './share';
 
 function fileDiProva(): File {
   return new File(['contenuto'], 'prova.ics', { type: 'text/calendar' });
@@ -13,6 +13,25 @@ function definisciNavigatorShare(canShare: unknown, share: unknown) {
 
 const createObjectURLOriginale = URL.createObjectURL;
 const revokeObjectURLOriginale = URL.revokeObjectURL;
+const locationOriginale = window.location;
+
+/**
+ * Sostituisce `window.location` con un oggetto finto il cui setter di `href`
+ * può registrare il valore ricevuto oppure lanciare, per simulare sia la
+ * navigazione riuscita sia il rifiuto che una PWA installata standalone può
+ * opporre. Ripristinato nell'afterEach comune, come `URL.createObjectURL`.
+ */
+function definisciLocation(comportamento: { lanciaErrore: boolean }, cattura?: { href: string }) {
+  Object.defineProperty(window, 'location', {
+    configurable: true,
+    value: {
+      set href(v: string) {
+        if (comportamento.lanciaErrore) throw new Error('navigazione rifiutata');
+        if (cattura) cattura.href = v;
+      },
+    },
+  });
+}
 
 afterEach(() => {
   vi.restoreAllMocks();
@@ -23,6 +42,7 @@ afterEach(() => {
   delete navigator.share;
   URL.createObjectURL = createObjectURLOriginale;
   URL.revokeObjectURL = revokeObjectURLOriginale;
+  Object.defineProperty(window, 'location', { configurable: true, value: locationOriginale });
 });
 
 describe('condividiFile', () => {
@@ -150,5 +170,54 @@ describe('condividiFile', () => {
     } finally {
       vi.useRealTimers();
     }
+  });
+});
+
+describe('apriCalendario', () => {
+  it('naviga verso il contenuto .ics e restituisce "aperto"', async () => {
+    const createObjectURL = vi.fn().mockReturnValue('blob:finto');
+    const revokeObjectURL = vi.fn();
+    URL.createObjectURL = createObjectURL;
+    URL.revokeObjectURL = revokeObjectURL;
+
+    const cattura = { href: '' };
+    definisciLocation({ lanciaErrore: false }, cattura);
+
+    vi.useFakeTimers();
+    try {
+      const esito = await apriCalendario('BEGIN:VCALENDAR\nEND:VCALENDAR');
+
+      expect(esito).toBe('aperto');
+      expect(cattura.href).toBe('blob:finto');
+      const blobUsato = createObjectURL.mock.calls[0][0] as Blob;
+      expect(blobUsato).toBeInstanceOf(Blob);
+      expect(blobUsato.type).toBe('text/calendar');
+
+      // Revocato su timer, non subito: coerente con quanto già fa condividiFile.
+      expect(revokeObjectURL).not.toHaveBeenCalled();
+      vi.advanceTimersByTime(10_000);
+      expect(revokeObjectURL).toHaveBeenCalledWith('blob:finto');
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it('se la navigazione lancia, ripiega su condividiFile e ne restituisce l\'esito', async () => {
+    // Nessuna Web Share API disponibile: il ripiego di condividiFile atterra
+    // sul download, il cui esito deve propagarsi da apriCalendario.
+    URL.createObjectURL = vi.fn().mockReturnValue('blob:finto');
+    URL.revokeObjectURL = vi.fn();
+    definisciLocation({ lanciaErrore: true });
+
+    let ancoraCliccata: HTMLAnchorElement | null = null;
+    vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(function (this: HTMLAnchorElement) {
+      ancoraCliccata = this;
+    });
+
+    const esito = await apriCalendario('BEGIN:VCALENDAR\nEND:VCALENDAR');
+
+    expect(esito).toBe('scaricato');
+    expect(ancoraCliccata).not.toBeNull();
+    expect(ancoraCliccata!.download).toBe('bibiciclo.ics');
   });
 });
