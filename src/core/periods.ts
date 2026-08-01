@@ -1,5 +1,20 @@
-import type { Flusso, ISODate, Periodo, Stato } from '../types';
+import type { DayLog, Flusso, ISODate, Periodo, Stato } from '../types';
 import { confronta, diffDays } from './dates';
+
+/**
+ * `dayLogs` è l'unica fonte di verità di questo modulo: ciò che l'utente ha
+ * effettivamente registrato o rimosso. `periods` non viene mai scritto
+ * direttamente — è sempre ricalcolato da `dayLogs` (vedi `normalizza` /
+ * `derivaPeriodi`), così che le due strutture non possano mai contraddirsi.
+ *
+ * `TOLLERANZA` fa tre lavori distinti, tutti derivati dalla stessa costante
+ * ma logicamente separati:
+ * 1. raggruppare i giorni di diario vicini in un unico periodo (`normalizza`);
+ * 2. decidere se l'ultimo periodo è "in corso" (`cicloInCorso`);
+ * 3. e quindi, indirettamente, quale titolo mostra la schermata Oggi (ciclo
+ *    in corso, in ritardo, o attesa normale) — perché quel titolo dipende
+ *    dall'esito di `cicloInCorso`.
+ */
 
 /** Giorni di scarto entro cui una registrazione appartiene ancora allo stesso ciclo. */
 const TOLLERANZA = 2;
@@ -24,7 +39,7 @@ const ordina = (p: Periodo[]) => [...p].sort((a, b) => confronta(a.inizio, b.ini
  * - Due registrazioni non creano mai una "fusione cieca" di periodi distinti
  * - Lo stato è una pura funzione del diario: stessa dayLogs → stessi periods
  */
-function normalizza(dayLogs: Record<ISODate, unknown>, periodsEsistenti: Periodo[]): Periodo[] {
+function normalizza(dayLogs: Record<ISODate, DayLog>, periodsEsistenti: Periodo[]): Periodo[] {
   const dates = Object.keys(dayLogs).sort();
 
   if (dates.length === 0) return [];
@@ -57,11 +72,13 @@ function normalizza(dayLogs: Record<ISODate, unknown>, periodsEsistenti: Periodo
 }
 
 /**
- * Registra un giorno di flusso.
+ * Registra un giorno di flusso: scrive (o sovrascrive) la voce in `dayLogs`,
+ * poi rideriva l'intero elenco di `periods` da zero con `normalizza`.
  *
- * Il giorno viene assorbito dal ciclo che gli sta vicino entro TOLLERANZA giorni:
- * dimenticare di segnare un giorno non deve spezzare un ciclo in due, perché due
- * `inizio` fasulli falserebbero tutte le medie successive.
+ * Non decide "a mano" a quale ciclo appartenga il giorno: è un effetto
+ * collaterale della derivazione, che raggruppa insieme i giorni distanti al
+ * più TOLLERANZA. Dimenticare di segnare un giorno, quindi, non spezza un
+ * ciclo in due — due `inizio` fasulli falserebbero tutte le medie successive.
  */
 export function registraGiorno(stato: Stato, data: ISODate, flusso: Flusso, nota?: string): Stato {
   const dayLogs = { ...stato.dayLogs, [data]: nota ? { flusso, nota } : { flusso } };

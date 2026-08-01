@@ -55,7 +55,7 @@ describe('esporta e importa', () => {
     expect(importato.dayLogs['2026-07-06']).toBeDefined();
   });
 
-  it('gestisce dayLogs come array (invalido)', () => {
+  it('rifiuta un backup con dayLogs come array (nessun giorno leggibile)', () => {
     const backupConArrayDayLogs = JSON.stringify({
       schemaVersion: 1,
       settings: { cicloMedioDichiarato: 28, dataInstallazione: '2026-07-01' },
@@ -63,9 +63,9 @@ describe('esporta e importa', () => {
       dayLogs: ['not', 'an', 'object'],
     });
 
-    const { stato: importato, giorniScartati } = importaJson(backupConArrayDayLogs, '2026-08-01');
-    expect(giorniScartati).toBe(0); // nulla da perdere, nulla grezzi nel "file"
-    expect(Object.keys(importato.dayLogs)).toHaveLength(0);
+    expect(() => importaJson(backupConArrayDayLogs, '2026-08-01')).toThrow(
+      /non contiene nessun giorno leggibile/i,
+    );
   });
 
   it('preserva i giorni anche con periodi nonsensici nel file', () => {
@@ -89,6 +89,89 @@ describe('esporta e importa', () => {
     // I periodi vengono ricalcolati dai dayLogs validi
     expect(importato.periods).toHaveLength(1);
     expect(importato.periods[0]).toEqual({ id: expect.any(String), inizio: '2026-07-03', fine: '2026-07-07' });
+  });
+});
+
+describe('importaJson rifiuta un file senza nessun giorno leggibile (invece di svuotare i dati)', () => {
+  it('dayLogs assente', () => {
+    const backup = JSON.stringify({
+      schemaVersion: 1,
+      settings: { cicloMedioDichiarato: 28, dataInstallazione: '2026-07-01' },
+      periods: [],
+    });
+    expect(() => importaJson(backup, '2026-08-01')).toThrow(
+      "Questo backup non contiene nessun giorno leggibile. Non l'ho importato, così non sovrascrivi quello che hai già.",
+    );
+  });
+
+  it('dayLogs null', () => {
+    const backup = JSON.stringify({
+      schemaVersion: 1,
+      settings: { cicloMedioDichiarato: 28, dataInstallazione: '2026-07-01' },
+      periods: [],
+      dayLogs: null,
+    });
+    expect(() => importaJson(backup, '2026-08-01')).toThrow(
+      "Questo backup non contiene nessun giorno leggibile. Non l'ho importato, così non sovrascrivi quello che hai già.",
+    );
+  });
+
+  it('dayLogs è un array', () => {
+    const backup = JSON.stringify({
+      schemaVersion: 1,
+      settings: { cicloMedioDichiarato: 28, dataInstallazione: '2026-07-01' },
+      periods: [],
+      dayLogs: ['not', 'an', 'object'],
+    });
+    expect(() => importaJson(backup, '2026-08-01')).toThrow(
+      "Questo backup non contiene nessun giorno leggibile. Non l'ho importato, così non sovrascrivi quello che hai già.",
+    );
+  });
+
+  it('dayLogs è una stringa', () => {
+    const backup = JSON.stringify({
+      schemaVersion: 1,
+      settings: { cicloMedioDichiarato: 28, dataInstallazione: '2026-07-01' },
+      periods: [],
+      dayLogs: 'boh',
+    });
+    expect(() => importaJson(backup, '2026-08-01')).toThrow(
+      "Questo backup non contiene nessun giorno leggibile. Non l'ho importato, così non sovrascrivi quello che hai già.",
+    );
+  });
+
+  it('dayLogs con solo voci corrotte (nessuna sopravvive)', () => {
+    const backup = JSON.stringify({
+      schemaVersion: 1,
+      settings: { cicloMedioDichiarato: 28, dataInstallazione: '2026-07-01' },
+      periods: [],
+      dayLogs: { '2026-07-04': { flusso: 'pippo' }, '2026-13-45': { flusso: 'tanto' } },
+    });
+    expect(() => importaJson(backup, '2026-08-01')).toThrow(/non contiene nessun giorno leggibile/i);
+  });
+
+  it('un {} genuinamente vuoto è un backup legittimo: nessun errore', () => {
+    const backup = JSON.stringify({
+      schemaVersion: 1,
+      settings: { cicloMedioDichiarato: 28, dataInstallazione: '2026-07-01' },
+      periods: [],
+      dayLogs: {},
+    });
+    const { stato: importato, giorniScartati } = importaJson(backup, '2026-08-01');
+    expect(giorniScartati).toBe(0);
+    expect(importato.dayLogs).toEqual({});
+  });
+
+  it('un backup normale con giorni continua a funzionare come prima', () => {
+    const backup = JSON.stringify({
+      schemaVersion: 1,
+      settings: { cicloMedioDichiarato: 28, dataInstallazione: '2026-07-01' },
+      periods: [{ id: 'p1', inizio: '2026-07-03', fine: '2026-07-03' }],
+      dayLogs: { '2026-07-03': { flusso: 'medio' } },
+    });
+    const { stato: importato, giorniScartati } = importaJson(backup, '2026-08-01');
+    expect(giorniScartati).toBe(0);
+    expect(importato.dayLogs).toEqual({ '2026-07-03': { flusso: 'medio' } });
   });
 });
 

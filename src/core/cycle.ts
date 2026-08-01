@@ -2,8 +2,8 @@ import type { ISODate, Periodo } from '../types';
 import { addDays, confronta, diffDays } from './dates';
 
 const CICLI_CONSIDERATI = 6;
-const DURATA_MIN = 21;
-const DURATA_MAX = 45;
+export const DURATA_MIN = 21;
+export const DURATA_MAX = 45;
 const SOGLIA_IRREGOLARITA = 7;
 export const GIORNI_FASE_LUTEALE = 14;
 export const FERTILE_PRIMA = 5;
@@ -64,9 +64,18 @@ export function isIrregolare(periods: Periodo[]): boolean {
   return Math.max(...l) - Math.min(...l) > SOGLIA_IRREGOLARITA;
 }
 
+/**
+ * Mediana delle durate dei cicli passati, escluso il più recente: quello
+ * potrebbe essere ancora in corso (la registrazione del giorno finale non è
+ * detto sia già avvenuta), quindi la sua durata non è ancora un dato
+ * affidabile. Con al più un ciclo registrato — incluso il caso appena dopo
+ * l'onboarding, che ne crea uno di un solo giorno — non resta nulla su cui
+ * calcolare una mediana, e si usa il default.
+ */
 export function durataMestruazioni(periods: Periodo[]): number {
-  if (periods.length === 0) return DURATA_MESTRUAZIONI_DEFAULT;
-  return mediana(periods.map((p) => diffDays(p.inizio, p.fine) + 1));
+  const passati = ordinati(periods).slice(0, -1);
+  if (passati.length === 0) return DURATA_MESTRUAZIONI_DEFAULT;
+  return mediana(passati.map((p) => diffDays(p.inizio, p.fine) + 1));
 }
 
 const rawDurata = (periods: Periodo[], dichiarato: number): number => {

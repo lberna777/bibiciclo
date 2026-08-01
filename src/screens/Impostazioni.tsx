@@ -1,5 +1,6 @@
 import { useRef, useState } from 'react';
 import { diffDays, oggi } from '../core/dates';
+import { DURATA_MAX, DURATA_MIN } from '../core/cycle';
 import { eventiPrevisti, generaIcs } from '../calendar/ics';
 import { esportaJson, importaJson, nomeFileBackup } from '../storage/backup';
 import { condividiFile } from '../lib/share';
@@ -115,14 +116,14 @@ export default function Impostazioni() {
           </div>
           <div className="flex items-center gap-3">
             <button
-              onClick={() => void aggiornaDurataMedia(Math.max(21, stato.settings.cicloMedioDichiarato - 1))}
+              onClick={() => void aggiornaDurataMedia(Math.max(DURATA_MIN, stato.settings.cicloMedioDichiarato - 1))}
               className="h-11 w-11 rounded-full border border-bordo text-xl text-rosa"
             >
               −
             </button>
             <span className="w-7 text-center text-lg font-bold">{stato.settings.cicloMedioDichiarato}</span>
             <button
-              onClick={() => void aggiornaDurataMedia(Math.min(45, stato.settings.cicloMedioDichiarato + 1))}
+              onClick={() => void aggiornaDurataMedia(Math.min(DURATA_MAX, stato.settings.cicloMedioDichiarato + 1))}
               className="h-11 w-11 rounded-full border border-bordo text-xl text-rosa"
             >
               +

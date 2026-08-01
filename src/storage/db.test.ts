@@ -106,4 +106,24 @@ describe('migra', () => {
     expect(migra({ schemaVersion: 'boh' }, '2026-07-31').schemaVersion).toBe(1);
     expect(migra({}, '2026-07-31').schemaVersion).toBe(1);
   });
+
+  it('conserva una dataInstallazione salvata valida', () => {
+    const s = migra({ settings: { dataInstallazione: '2026-01-15' } }, '2026-07-31');
+    expect(s.settings.dataInstallazione).toBe('2026-01-15');
+  });
+
+  it('ricade sull argomento oggi se dataInstallazione salvata non è una data valida (es. "boh")', () => {
+    const s = migra({ settings: { dataInstallazione: 'boh' } }, '2026-07-31');
+    expect(s.settings.dataInstallazione).toBe('2026-07-31');
+  });
+
+  it('ricade sull argomento oggi se dataInstallazione salvata è una data di calendario inesistente', () => {
+    const s = migra({ settings: { dataInstallazione: '2026-13-45' } }, '2026-07-31');
+    expect(s.settings.dataInstallazione).toBe('2026-07-31');
+  });
+
+  it('ricade sull argomento oggi se dataInstallazione è assente', () => {
+    const s = migra({ settings: {} }, '2026-07-31');
+    expect(s.settings.dataInstallazione).toBe('2026-07-31');
+  });
 });

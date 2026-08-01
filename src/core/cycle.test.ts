@@ -86,8 +86,29 @@ describe('durataMestruazioni', () => {
   it('vale 5 giorni senza storico', () => {
     expect(durataMestruazioni([])).toBe(5);
   });
-  it('è la mediana delle durate registrate', () => {
-    expect(durataMestruazioni(cicli('2026-01-01', [28, 28], 4))).toBe(4);
+
+  it('vale 5 giorni subito dopo l onboarding (un solo periodo di un giorno)', () => {
+    const unico: Periodo[] = [{ id: 'p0', inizio: '2026-07-01', fine: '2026-07-01' }];
+    expect(durataMestruazioni(unico)).toBe(5);
+  });
+
+  it('è la mediana delle durate registrate, escluso il periodo più recente', () => {
+    const p: Periodo[] = [
+      { id: 'p0', inizio: '2026-01-01', fine: '2026-01-04' }, // 4 giorni
+      { id: 'p1', inizio: '2026-02-01', fine: '2026-02-04' }, // 4 giorni
+      // il più recente: ancora "aperto" (un solo giorno), va escluso dalla mediana
+      { id: 'p2', inizio: '2026-03-01', fine: '2026-03-01' },
+    ];
+    expect(durataMestruazioni(p)).toBe(4);
+  });
+
+  it('esclude il periodo più recente per data di inizio, anche se i cicli arrivano disordinati', () => {
+    const p: Periodo[] = [
+      { id: 'p2', inizio: '2026-03-01', fine: '2026-03-01' }, // più recente: 1 giorno, escluso
+      { id: 'p0', inizio: '2026-01-01', fine: '2026-01-04' }, // 4 giorni
+      { id: 'p1', inizio: '2026-02-01', fine: '2026-02-04' }, // 4 giorni
+    ];
+    expect(durataMestruazioni(p)).toBe(4);
   });
 });
 

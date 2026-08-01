@@ -29,6 +29,7 @@ export default function FoglioRegistrazione({ data, onChiudi, onScegliGiorno }: 
   }
 
   async function elimina() {
+    if (!confirm('Vuoi togliere questo giorno dal diario?')) return;
     await rimuovi(data);
     onChiudi();
   }

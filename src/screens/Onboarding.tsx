@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { addDays, formattaLunga, giorniDelMese, giornoSettimana, nomeMese, oggi } from '../core/dates';
+import { DURATA_MAX, DURATA_MIN } from '../core/cycle';
 import { useStore } from '../store';
 import Avvertenza from '../components/Avvertenza';
 
@@ -76,7 +77,7 @@ export default function Onboarding() {
           </p>
           <div className="mt-10 flex items-center justify-center gap-7">
             <button
-              onClick={() => setCicloMedio((n) => Math.max(21, n - 1))}
+              onClick={() => setCicloMedio((n) => Math.max(DURATA_MIN, n - 1))}
               className="h-16 w-16 rounded-full border border-bordo bg-white text-3xl font-bold text-rosa"
             >
               −
@@ -86,7 +87,7 @@ export default function Onboarding() {
               <div className="text-xs uppercase tracking-wider text-tenue">giorni</div>
             </div>
             <button
-              onClick={() => setCicloMedio((n) => Math.min(45, n + 1))}
+              onClick={() => setCicloMedio((n) => Math.min(DURATA_MAX, n + 1))}
               className="h-16 w-16 rounded-full border border-bordo bg-white text-3xl font-bold text-rosa"
             >
               +

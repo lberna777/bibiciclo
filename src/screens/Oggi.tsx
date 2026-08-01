@@ -43,6 +43,16 @@ export default function Oggi() {
             Iniziato {formattaLunga(inCorso.inizio)}.
           </p>
         </>
+      ) : p && p.giorniAlProssimo < -15 ? (
+        <>
+          <h1 className="mt-2 text-[26px] font-extrabold leading-tight tracking-tight">
+            Non segni il ciclo
+            <br />da <span className="text-rosa">{-p.giorniAlProssimo} {-p.giorniAlProssimo === 1 ? 'giorno' : 'giorni'}</span>
+          </h1>
+          <p className="mt-2.5 text-sm leading-relaxed text-inchiostro/65">
+            Segna l'ultimo ciclo che ricordi e le previsioni tornano utili.
+          </p>
+        </>
       ) : p && p.giorniAlProssimo < 0 ? (
         <>
           <h1 className="mt-2 text-[26px] font-extrabold leading-tight tracking-tight">

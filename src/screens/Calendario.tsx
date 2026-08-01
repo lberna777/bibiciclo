@@ -3,6 +3,7 @@ import { addDays, giorniDelMese, giornoSettimana, nomeMese, oggi } from '../core
 import { previsione } from '../core/cycle';
 import { useStore } from '../store';
 import FoglioRegistrazione from '../components/FoglioRegistrazione';
+import Avvertenza from '../components/Avvertenza';
 
 export default function Calendario() {
   const stato = useStore((s) => s.stato);
@@ -81,9 +82,20 @@ export default function Calendario() {
         </span>
       </div>
 
-      <p className="mt-4 pb-4 text-[13px] text-tenue">
+      {p?.irregolare && (
+        <div className="mt-4 rounded-2xl border border-bordo bg-white p-3 text-[11px] leading-snug text-inchiostro/70">
+          I tuoi ultimi cicli sono stati piuttosto irregolari, quindi questa previsione — e
+          soprattutto il periodo fertile — è poco affidabile.
+        </div>
+      )}
+
+      <p className="mt-4 text-[13px] text-tenue">
         Tocca un giorno qualsiasi per segnarlo o correggerlo.
       </p>
+
+      <div className="mt-6 pb-4">
+        <Avvertenza breve />
+      </div>
 
       {foglio && (
         <FoglioRegistrazione

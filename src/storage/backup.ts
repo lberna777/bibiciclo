@@ -1,7 +1,5 @@
 import type { ISODate, Stato } from '../types';
-import { migra } from './db';
-
-const VERSIONE_SCHEMA = 1;
+import { migra, VERSIONE_SCHEMA } from './db';
 
 export interface EsitoImport {
   stato: Stato;
@@ -26,6 +24,23 @@ function contaGiorniRaw(dayLogsRaw: unknown): number {
     return 0;
   }
   return Object.keys(dayLogsRaw as Record<string, unknown>).length;
+}
+
+/**
+ * Un `dayLogs` grezzo è un backup "legittimamente vuoto" solo se è un
+ * oggetto piano con zero chiavi: un diario mai iniziato. Qualunque altra
+ * forma (assente, `null`, un array, una stringa, o un oggetto con chiavi
+ * che non sono sopravvissute alla validazione) non è un vuoto genuino: è
+ * un file illeggibile, e va trattato come tale anziché come "niente da
+ * importare".
+ */
+function eraVuotoLegittimo(dayLogsRaw: unknown): boolean {
+  return (
+    !!dayLogsRaw &&
+    typeof dayLogsRaw === 'object' &&
+    !Array.isArray(dayLogsRaw) &&
+    Object.keys(dayLogsRaw as Record<string, unknown>).length === 0
+  );
 }
 
 /**
@@ -63,6 +78,17 @@ export function importaJson(testo: string, oggi: ISODate): EsitoImport {
 
   // Applichiamo la migrazione, che valida e filtra
   const stato = migra(grezzo, oggi);
+
+  // Se non è sopravvissuto nessun giorno e il file non era un backup
+  // genuinamente vuoto, l'importazione non ha recuperato niente di
+  // leggibile: restituire successo scriverebbe questo stato vuoto sopra
+  // ai dati reali dell'utente. Meglio rifiutare esplicitamente che
+  // dichiarare un ripristino riuscito che in realtà cancella tutto.
+  if (Object.keys(stato.dayLogs).length === 0 && !eraVuotoLegittimo(dayLogsRaw)) {
+    throw new Error(
+      'Questo backup non contiene nessun giorno leggibile. Non l\'ho importato, così non sovrascrivi quello che hai già.',
+    );
+  }
 
   // Giorni scartati = quelli che erano presenti nel file ma non sono sopravvissuti alla validazione
   const giorniScartati = Math.max(0, giorniRaw - Object.keys(stato.dayLogs).length);

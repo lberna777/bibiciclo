@@ -4,7 +4,12 @@ import { oggi } from '../core/dates';
 import { derivaPeriodi } from '../core/periods';
 
 const CHIAVE = 'bibiciclo:v1';
-const VERSIONE_SCHEMA = 1;
+/**
+ * Esportata perché `storage/backup.ts` deve confrontarsi con lo stesso
+ * numero: se le due copie divergessero, un bump da una parte sola farebbe
+ * sì che l'app rifiuti i propri backup (o viceversa).
+ */
+export const VERSIONE_SCHEMA = 1;
 
 const FLUSSI_VALIDI: readonly Flusso[] = ['leggero', 'medio', 'tanto'];
 
@@ -83,8 +88,14 @@ export function migra(grezzo: unknown, dataInstallazione: ISODate): Stato {
         typeof g.settings?.cicloMedioDichiarato === 'number'
           ? g.settings.cicloMedioDichiarato
           : base.settings.cicloMedioDichiarato,
+      // dataInstallazione deve restare stabile quanto le date di dayLogs: un
+      // valore illeggibile (es. "boh" da un file corrotto) si propagherebbe
+      // fino al calcolo di SEQUENCE nel generatore di .ics, producendo un
+      // valore non numerico. Si applica quindi lo stesso controllo di
+      // validità usato per le chiavi di dayLogs, con lo stesso ripiego: se
+      // il valore salvato non è una data valida, si usa quello corrente.
       dataInstallazione:
-        typeof g.settings?.dataInstallazione === 'string'
+        typeof g.settings?.dataInstallazione === 'string' && dataValida(g.settings.dataInstallazione)
           ? g.settings.dataInstallazione
           : dataInstallazione,
     },
