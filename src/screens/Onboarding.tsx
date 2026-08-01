@@ -135,12 +135,12 @@ function SelettoreData({ valore, onCambia }: { valore: string; onCambia: (d: str
   const canNavAvanti = meseAvanti <= limite;
 
   return (
-    <div className="rounded-2xl border border-bordo bg-white p-3">
+    <div className="rounded-2xl border border-bordo bg-white p-0.5">
       <div className="mb-2 flex items-center justify-between px-1 text-sm font-bold">
         <button
           onClick={() => spostaMese(-1)}
           disabled={!canNavIndietro}
-          className={`px-3 py-1 ${canNavIndietro ? 'text-rosa' : 'text-tenue/40'}`}
+          className={`px-4 py-3 ${canNavIndietro ? 'text-rosa' : 'text-tenue/40'}`}
         >
           ‹
         </button>
@@ -148,7 +148,7 @@ function SelettoreData({ valore, onCambia }: { valore: string; onCambia: (d: str
         <button
           onClick={() => spostaMese(1)}
           disabled={!canNavAvanti}
-          className={`px-3 py-1 ${canNavAvanti ? 'text-rosa' : 'text-tenue/40'}`}
+          className={`px-4 py-3 ${canNavAvanti ? 'text-rosa' : 'text-tenue/40'}`}
         >
           ›
         </button>
@@ -156,7 +156,7 @@ function SelettoreData({ valore, onCambia }: { valore: string; onCambia: (d: str
       <div className="grid grid-cols-7 text-center text-[10px] text-tenue">
         {['L', 'M', 'M', 'G', 'V', 'S', 'D'].map((g, i) => <div key={i}>{g}</div>)}
       </div>
-      <div className="mt-1 grid grid-cols-7 gap-1">
+      <div className="mt-1 grid grid-cols-7 gap-0.5">
         {Array.from({ length: vuoti }, (_, i) => <div key={`v${i}`} />)}
         {giorni.map((g) => {
           const futuro = g > limite;
