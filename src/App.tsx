@@ -1,6 +1,7 @@
 import { useEffect } from 'react';
 import { useStore } from './store';
 import TabBar from './components/TabBar';
+import Onboarding from './screens/Onboarding';
 
 export default function App() {
   const pronto = useStore((s) => s.pronto);
@@ -29,7 +30,7 @@ export default function App() {
 
   if (!pronto) return <div className="p-6 text-tenue">Un attimo…</div>;
 
-  if (periods.length === 0) return <div className="p-6">Onboarding (Task 9)</div>;
+  if (periods.length === 0) return <Onboarding />;
 
   return (
     <div className="flex h-full flex-col">
