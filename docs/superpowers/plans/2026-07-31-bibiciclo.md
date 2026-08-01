@@ -1731,7 +1731,11 @@ import Avvertenza from '../components/Avvertenza';
 export default function Onboarding() {
   const [passo, setPasso] = useState(0);
   const [ultimoInizio, setUltimoInizio] = useState(addDays(oggi(), -14));
-  const [cicloMedio, setCicloMedio] = useState(28);
+  // Non 28 fisso: la schermata è raggiungibile anche dopo l'onboarding (se
+  // resta senza giorni registrati), e ripartire dal default farebbe sembrare
+  // che l'app si sia dimenticata quello che le ha già detto.
+  const dichiarato = useStore((s) => s.stato.settings.cicloMedioDichiarato);
+  const [cicloMedio, setCicloMedio] = useState(dichiarato);
   const completa = useStore((s) => s.completaOnboarding);
 
   return (
@@ -1816,6 +1820,11 @@ export default function Onboarding() {
     </div>
   );
 }
+
+Due protezioni che il selettore deve avere, entrambe pensate per chi sbaglia un tocco:
+
+- **Si può tornare indietro.** Gli step 1 e 2 hanno in alto a sinistra un `‹ Indietro` discreto (`text-sm text-tenue`, area di tocco 44px — il minimo Apple), che riporta allo step precedente senza azzerare le scelte già fatte. Un percorso a senso unico costringerebbe a finire l'onboarding e poi cancellare a mano il giorno sbagliato.
+- **Le date hanno un pavimento.** `minimo = addDays(oggi(), -180)`: un ciclo iniziato più di sei mesi fa non dice nulla di utile alle previsioni, e più indietro di così è certamente un tocco sbagliato. I giorni fuori intervallo sono disabilitati, e le frecce di navigazione si spengono quando il mese che raggiungerebbero non ha nemmeno un giorno selezionabile. Attenzione al confronto: per la freccia indietro va guardato l'**ultimo** giorno del mese precedente, non il primo, altrimenti si perde l'ultimo mese buono.
 
 /** Calendario compatto per scegliere una data passata. */
 function SelettoreData({ valore, onCambia }: { valore: string; onCambia: (d: string) => void }) {
