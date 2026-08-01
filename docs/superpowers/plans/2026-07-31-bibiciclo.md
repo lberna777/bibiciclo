@@ -1917,6 +1917,8 @@ Viene prima della schermata Oggi perché quest'ultima lo usa.
 
 Il flusso arriva preselezionato su "medio": nel caso tipico l'operazione si riduce a un solo tocco su Salva.
 
+**Chi monta questo componente deve passargli `key={data}`.** Il flusso e la nota vengono letti dal diario una sola volta, al montaggio: senza la `key`, riaprendo il foglio su un altro giorno React riuserebbe la stessa istanza e mostrerebbe — e salverebbe — i valori del giorno precedente. È un errore di dati, non solo visivo.
+
 ```tsx
 import { useState } from 'react';
 import type { Flusso, ISODate } from '../types';
@@ -2173,6 +2175,7 @@ export default function Oggi() {
 
       {foglio && (
         <FoglioRegistrazione
+          key={foglio}
           data={foglio}
           onChiudi={() => setFoglio(null)}
           onScegliGiorno={() => {
@@ -2311,6 +2314,7 @@ export default function Calendario() {
 
       {foglio && (
         <FoglioRegistrazione
+          key={foglio}
           data={foglio}
           onChiudi={() => setFoglio(null)}
           onScegliGiorno={() => setFoglio(null)}
