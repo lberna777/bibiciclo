@@ -2365,7 +2365,7 @@ git commit -m "feat(ui): vista calendario mensile"
 - Consumes: `Periodo`, `ISODate` da `src/types`; `addDays` da `src/core/dates`; `previsione`, `durataMediana`, `durataMestruazioni` da `src/core/cycle`
 - Produces:
   - `eventiPrevisti(periods, dichiarato, oggi, quanti?): EventoPrevisto[]`
-  - `generaIcs(eventi: EventoPrevisto[]): string`
+  - `generaIcs(eventi: EventoPrevisto[], sequenza = 0): string`
   - `interface EventoPrevisto { uid; titolo; inizio; fineEsclusa; tipo: 'ciclo' | 'fertile' }`
 
 - [ ] **Step 1: Scrivere i test in `src/calendar/ics.test.ts`**
@@ -2470,8 +2470,15 @@ const compatta = (d: ISODate) => d.replace(/-/g, '');
 
 /**
  * Prossimi cicli previsti e relative finestre fertili.
- * Gli UID sono derivati dalla data, così riesportare aggiorna gli eventi
- * esistenti nel calendario anziché duplicarli.
+ *
+ * Gli UID identificano la *posizione* dell'evento (il primo ciclo previsto, il
+ * secondo…), non la data: la data prevista si sposta a ogni ciclo registrato,
+ * quindi UID basati su di essa cambierebbero a ogni esportazione e lascerebbero
+ * nel calendario una scia di eventi vecchi con date ormai sbagliate.
+ *
+ * Con identità stabili, un calendario che rispetta gli UID aggiorna le voci
+ * esistenti. Non possiamo garantire come si comporti iOS: se dovessero comparire
+ * dei doppioni, i vecchi si cancellano a mano.
  */
 export function eventiPrevisti(
   periods: Periodo[],
@@ -2510,7 +2517,7 @@ export function eventiPrevisti(
   return eventi;
 }
 
-export function generaIcs(eventi: EventoPrevisto[]): string {
+export function generaIcs(eventi: EventoPrevisto[], sequenza = 0): string {
   const stamp = new Date().toISOString().replace(/[-:]/g, '').replace(/\.\d{3}/, '');
 
   const righe: string[] = [
@@ -2692,7 +2699,7 @@ git commit -m "feat: esportazione e importazione dei dati"
 
 ```tsx
 import { useRef, useState } from 'react';
-import { oggi } from '../core/dates';
+import { diffDays, oggi } from '../core/dates';
 import { eventiPrevisti, generaIcs } from '../calendar/ics';
 import { esportaJson, importaJson, nomeFileBackup } from '../storage/backup';
 import { condividiFile } from '../lib/share';
@@ -2728,7 +2735,11 @@ export default function Impostazioni() {
       setMessaggio('Segna almeno un ciclo prima di esportare le date.');
       return;
     }
-    const file = new File([generaIcs(eventi)], 'bibiciclo.ics', { type: 'text/calendar' });
+    // SEQUENCE crescente: iOS aggiorna un evento con lo stesso UID solo se il
+    // numero di sequenza è più alto. I giorni trascorsi dall'installazione
+    // crescono da soli, senza bisogno di memorizzare un contatore.
+    const sequenza = diffDays(stato.settings.dataInstallazione, oggi());
+    const file = new File([generaIcs(eventi, sequenza)], 'bibiciclo.ics', { type: 'text/calendar' });
     const esito = await condividiFile(file, 'Date di BibiCiclo');
     setMessaggio(MESSAGGI_CALENDARIO[esito]);
   }
