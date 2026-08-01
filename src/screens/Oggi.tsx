@@ -119,7 +119,7 @@ export default function Oggi() {
         🩸 {registratoOggi ? 'Modifica il ciclo di oggi' : 'Oggi mi è venuto'}
       </button>
 
-      <button onClick={() => setTab('calendario')} className="mt-4 w-full rounded-2xl py-3 text-center text-[13px] text-tenue">
+      <button onClick={() => setTab('calendario')} className="mt-4 w-full rounded-2xl py-3 text-center text-[13px] leading-5 text-tenue">
         Vedi il calendario ›
       </button>
 

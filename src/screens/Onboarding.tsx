@@ -140,7 +140,7 @@ function SelettoreData({ valore, onCambia }: { valore: string; onCambia: (d: str
         <button
           onClick={() => spostaMese(-1)}
           disabled={!canNavIndietro}
-          className={`px-4 py-3 ${canNavIndietro ? 'text-rosa' : 'text-tenue/40'}`}
+          className={`flex items-center justify-center min-w-11 px-4 py-3 ${canNavIndietro ? 'text-rosa' : 'text-tenue/40'}`}
         >
           ‹
         </button>
@@ -148,7 +148,7 @@ function SelettoreData({ valore, onCambia }: { valore: string; onCambia: (d: str
         <button
           onClick={() => spostaMese(1)}
           disabled={!canNavAvanti}
-          className={`px-4 py-3 ${canNavAvanti ? 'text-rosa' : 'text-tenue/40'}`}
+          className={`flex items-center justify-center min-w-11 px-4 py-3 ${canNavAvanti ? 'text-rosa' : 'text-tenue/40'}`}
         >
           ›
         </button>
