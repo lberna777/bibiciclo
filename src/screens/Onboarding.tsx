@@ -34,6 +34,12 @@ export default function Onboarding() {
 
       {passo === 1 && (
         <>
+          <button
+            onClick={() => setPasso(0)}
+            className="mb-4 flex items-center gap-1 px-3 py-2.5 text-sm text-tenue"
+          >
+            ‹ Indietro
+          </button>
           <h1 className="text-2xl font-extrabold tracking-tight">
             Quando è iniziato l'ultimo ciclo?
           </h1>
@@ -56,6 +62,12 @@ export default function Onboarding() {
 
       {passo === 2 && (
         <>
+          <button
+            onClick={() => setPasso(1)}
+            className="mb-4 flex items-center gap-1 px-3 py-2.5 text-sm text-tenue"
+          >
+            ‹ Indietro
+          </button>
           <h1 className="text-2xl font-extrabold tracking-tight">
             Ogni quanti giorni ti viene, più o meno?
           </h1>
@@ -100,6 +112,7 @@ function SelettoreData({ valore, onCambia }: { valore: string; onCambia: (d: str
   const giorni = giorniDelMese(anno, mese);
   const vuoti = giornoSettimana(giorni[0]);
   const limite = oggi();
+  const minimo = addDays(oggi(), -180);
 
   function spostaMese(delta: number) {
     const m = mese + delta;
@@ -108,12 +121,36 @@ function SelettoreData({ valore, onCambia }: { valore: string; onCambia: (d: str
     else setMese(m);
   }
 
+  // Calcola il primo giorno del mese se si naviga indietro
+  const meseIndietro = mese === 1
+    ? `${anno - 1}-12-01`
+    : `${anno}-${String(mese - 1).padStart(2, '0')}-01`;
+  const canNavIndietro = meseIndietro >= minimo;
+
+  // Calcola il primo giorno del mese se si naviga avanti
+  const meseAvanti = mese === 12
+    ? `${anno + 1}-01-01`
+    : `${anno}-${String(mese + 1).padStart(2, '0')}-01`;
+  const canNavAvanti = meseAvanti <= limite;
+
   return (
     <div className="rounded-2xl border border-bordo bg-white p-3">
       <div className="mb-2 flex items-center justify-between px-1 text-sm font-bold">
-        <button onClick={() => spostaMese(-1)} className="px-3 py-1 text-rosa">‹</button>
+        <button
+          onClick={() => spostaMese(-1)}
+          disabled={!canNavIndietro}
+          className={`px-3 py-1 ${canNavIndietro ? 'text-rosa' : 'text-tenue/40'}`}
+        >
+          ‹
+        </button>
         <span>{nomeMese(mese)} {anno}</span>
-        <button onClick={() => spostaMese(1)} className="px-3 py-1 text-rosa">›</button>
+        <button
+          onClick={() => spostaMese(1)}
+          disabled={!canNavAvanti}
+          className={`px-3 py-1 ${canNavAvanti ? 'text-rosa' : 'text-tenue/40'}`}
+        >
+          ›
+        </button>
       </div>
       <div className="grid grid-cols-7 text-center text-[10px] text-tenue">
         {['L', 'M', 'M', 'G', 'V', 'S', 'D'].map((g, i) => <div key={i}>{g}</div>)}
@@ -122,14 +159,16 @@ function SelettoreData({ valore, onCambia }: { valore: string; onCambia: (d: str
         {Array.from({ length: vuoti }, (_, i) => <div key={`v${i}`} />)}
         {giorni.map((g) => {
           const futuro = g > limite;
+          const passato = g < minimo;
+          const disabilitato = futuro || passato;
           const scelto = g === valore;
           return (
             <button
               key={g}
-              disabled={futuro}
+              disabled={disabilitato}
               onClick={() => onCambia(g)}
               className={`aspect-square rounded-full text-sm ${
-                scelto ? 'bg-rosa font-bold text-white' : futuro ? 'text-tenue/30' : 'text-inchiostro'
+                scelto ? 'bg-rosa font-bold text-white' : disabilitato ? 'text-tenue/30' : 'text-inchiostro'
               }`}
             >
               {Number(g.slice(8, 10))}
