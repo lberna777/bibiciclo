@@ -75,14 +75,14 @@ export default function FoglioRegistrazione({ data, onChiudi, onScegliGiorno }: 
           Salva
         </button>
 
-        <button onClick={onScegliGiorno} className="mt-3 w-full text-center text-sm text-tenue">
+        <button onClick={onScegliGiorno} className="mt-3 w-full text-center text-sm text-tenue py-3">
           È già iniziato? Scegli il giorno giusto ›
         </button>
 
         {esistente && (
           <button
             onClick={() => void elimina()}
-            className="mt-3 w-full text-center text-sm font-semibold text-rosa-scuro"
+            className="mt-3 w-full text-center text-sm font-semibold text-rosa-scuro py-3"
           >
             Rimuovi questo giorno
           </button>
