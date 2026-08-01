@@ -36,7 +36,7 @@ export default function Onboarding() {
         <>
           <button
             onClick={() => setPasso(0)}
-            className="mb-4 flex items-center gap-1 px-3 py-2.5 text-sm text-tenue"
+            className="mb-4 flex items-center gap-1 px-3 py-3 text-sm text-tenue"
           >
             ‹ Indietro
           </button>
@@ -64,7 +64,7 @@ export default function Onboarding() {
         <>
           <button
             onClick={() => setPasso(1)}
-            className="mb-4 flex items-center gap-1 px-3 py-2.5 text-sm text-tenue"
+            className="mb-4 flex items-center gap-1 px-3 py-3 text-sm text-tenue"
           >
             ‹ Indietro
           </button>
