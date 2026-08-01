@@ -93,20 +93,33 @@ describe('durataMestruazioni', () => {
   });
 
   it('è la mediana delle durate registrate, escluso il periodo più recente', () => {
+    // Durate non degeneri apposta: se l'implementazione includesse per
+    // errore anche il periodo più recente (il bug che questo test deve
+    // rilevare), la mediana verrebbe calcolata su [4, 6, 10] → ordinato
+    // [4, 6, 10], mediana (3 valori) = il centrale = 6.
+    // Escludendo correttamente il più recente (10, il periodo p2) resta
+    // solo [4, 6] → mediana (2 valori, pari) = (4 + 6) / 2 = 5.
+    // 5 ≠ 6: le due regole divergono, quindi il test le distingue davvero.
     const p: Periodo[] = [
       { id: 'p0', inizio: '2026-01-01', fine: '2026-01-04' }, // 4 giorni
-      { id: 'p1', inizio: '2026-02-01', fine: '2026-02-04' }, // 4 giorni
-      // il più recente: ancora "aperto" (un solo giorno), va escluso dalla mediana
-      { id: 'p2', inizio: '2026-03-01', fine: '2026-03-01' },
+      { id: 'p1', inizio: '2026-02-01', fine: '2026-02-06' }, // 6 giorni
+      // il più recente: ancora "aperto", va escluso dalla mediana
+      { id: 'p2', inizio: '2026-03-01', fine: '2026-03-10' }, // 10 giorni
     ];
-    expect(durataMestruazioni(p)).toBe(4);
+    expect(durataMestruazioni(p)).toBe(5);
   });
 
   it('esclude il periodo più recente per data di inizio, anche se i cicli arrivano disordinati', () => {
+    // Due soli periodi, ordine di inserimento invertito rispetto alla
+    // cronologia. Se l'implementazione includesse per errore anche il più
+    // recente, la mediana verrebbe calcolata su [4, 10] → ordinato
+    // [4, 10], mediana (2 valori, pari) = (4 + 10) / 2 = 7.
+    // Escludendo correttamente il più recente (10, per data di inizio,
+    // non per posizione nell'array) resta solo [4] → mediana di un solo
+    // valore = 4. 4 ≠ 7: anche qui le due regole divergono.
     const p: Periodo[] = [
-      { id: 'p2', inizio: '2026-03-01', fine: '2026-03-01' }, // più recente: 1 giorno, escluso
+      { id: 'p1', inizio: '2026-03-01', fine: '2026-03-10' }, // più recente: 10 giorni, escluso
       { id: 'p0', inizio: '2026-01-01', fine: '2026-01-04' }, // 4 giorni
-      { id: 'p1', inizio: '2026-02-01', fine: '2026-02-04' }, // 4 giorni
     ];
     expect(durataMestruazioni(p)).toBe(4);
   });
